@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSendTransaction, useReadContract, useAccount, useWaitForTransactionReceipt, useChainId, useWalletClient } from 'wagmi';
+import {
+  useSendTransaction,
+  useReadContract,
+  useAccount,
+  useWaitForTransactionReceipt,
+  useSwitchChain,
+} from 'wagmi';
 import { base } from 'wagmi/chains';
-import { switchChain } from 'viem/actions';
 import { ABI, CONTRACT_ADDRESS, THEME_PRESETS, FRAME_STYLES } from '@/lib/contract';
 import { encodeWithAttribution } from '@/lib/attribution';
 import type { Address } from 'viem';
@@ -22,11 +27,10 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
     args: [address],
   });
 
-  const [artists, setArtists] = useState<string[]>(['', '', '']);
+  const [artists, setArtists] = useState<string[]>([]);
   const [themeColor, setThemeColor] = useState('#7c3aed');
   const [frameStyle, setFrameStyle] = useState('glow');
   const [artistInput, setArtistInput] = useState('');
-  const [switchError, setSwitchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profileData) return;
@@ -36,12 +40,14 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
     if (savedFrame) setFrameStyle(savedFrame);
   }, [profileData]);
 
-  const chainId = useChainId();
-  const { data: walletClient } = useWalletClient();
-  const { sendTransaction, data: txHash, isPending } = useSendTransaction();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash: txHash,
-  });
+  // useAccount().chain は実際にウォレットが接続しているチェーンを返す
+  // wagmiのキャッシュではなくウォレットの実態を反映する
+  const { chain } = useAccount();
+  const isOnBase = chain?.id === base.id;
+
+  const { switchChain, isPending: isSwitching } = useSwitchChain();
+  const { sendTransaction, data: txHash, isPending: isSending } = useSendTransaction();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
   useEffect(() => {
     if (isSuccess) onSaved();
@@ -60,55 +66,9 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
     setArtists((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSave = async () => {
-    setSwitchError(null);
-
-    if (chainId !== base.id) {
-      const switched = await switchToBase();
-      if (!switched) return;
-    }
-
+  const handleSave = () => {
     const tx = encodeWithAttribution('setProfile', [filteredArtists, themeColor, frameStyle]);
     sendTransaction(tx);
-  };
-
-  const switchToBase = async (): Promise<boolean> => {
-    if (!walletClient) {
-      setSwitchError('ウォレットが接続されていません。');
-      return false;
-    }
-    try {
-      await switchChain(walletClient, { id: base.id });
-      return true;
-    } catch (err: unknown) {
-      const code = (err as { code?: number })?.code;
-      // 4902 = chain not added to wallet
-      if (code === 4902) {
-        try {
-          await walletClient.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: `0x${base.id.toString(16)}`,
-              chainName: 'Base',
-              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-              rpcUrls: ['https://mainnet.base.org'],
-              blockExplorerUrls: ['https://basescan.org'],
-            }],
-          });
-          return true;
-        } catch {
-          setSwitchError('Base の追加に失敗しました。');
-          return false;
-        }
-      }
-      // 4001 = user rejected
-      if (code === 4001) {
-        setSwitchError('チェーン切り替えを拒否しました。');
-      } else {
-        setSwitchError('Base chain への切り替えに失敗しました。');
-      }
-      return false;
-    }
   };
 
   const selectedPreset = THEME_PRESETS.find((t) => t.color === themeColor);
@@ -122,6 +82,27 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
             ×
           </button>
         </div>
+
+        {/* Wrong network banner */}
+        {!isOnBase && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-amber-400 text-sm font-medium">⚠ ネットワークが違います</span>
+            </div>
+            <p className="text-amber-300/70 text-xs">
+              現在: {chain?.name ?? `Chain ${chain?.id ?? '不明'}`}
+              {' → '}
+              Base Mainnet に切り替えてください
+            </p>
+            <button
+              onClick={() => switchChain({ chainId: base.id })}
+              disabled={isSwitching}
+              className="w-full py-2.5 rounded-xl font-semibold text-sm text-white bg-amber-500 hover:bg-amber-400 disabled:opacity-50 transition-all"
+            >
+              {isSwitching ? '切り替え中...' : 'Base に切り替える'}
+            </button>
+          </div>
+        )}
 
         {/* Theme Color */}
         <div>
@@ -137,10 +118,7 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
                     : 'bg-white/5 hover:bg-white/10'
                 }`}
               >
-                <div
-                  className="w-6 h-6 rounded-full"
-                  style={{ backgroundColor: preset.color }}
-                />
+                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: preset.color }} />
                 <span className="text-white/60 text-xs">{preset.label}</span>
               </button>
             ))}
@@ -172,8 +150,6 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
           <p className="text-white/50 text-xs uppercase tracking-widest mb-3">
             Vibing to ({filteredArtists.length}/5)
           </p>
-
-          {/* Existing artists */}
           <div className="flex flex-wrap gap-2 mb-3">
             {filteredArtists.map((artist, i) => (
               <span
@@ -190,8 +166,6 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
               </span>
             ))}
           </div>
-
-          {/* Add artist input */}
           {filteredArtists.length < 5 && (
             <div className="flex gap-2">
               <input
@@ -213,26 +187,22 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
           )}
         </div>
 
-        {/* Save button */}
+        {/* Save button — disabled when on wrong network */}
         <button
           onClick={handleSave}
-          disabled={isPending || isConfirming}
+          disabled={!isOnBase || isSending || isConfirming}
           className={`w-full py-3 rounded-2xl font-semibold text-white transition-all ${
-            selectedPreset
-              ? `bg-gradient-to-r ${selectedPreset.gradient}`
-              : 'bg-violet-600'
-          } disabled:opacity-50`}
+            selectedPreset ? `bg-gradient-to-r ${selectedPreset.gradient}` : 'bg-violet-600'
+          } disabled:opacity-40`}
         >
-          {isPending
+          {isSending
             ? 'Confirm in wallet...'
             : isConfirming
             ? 'Saving on Base...'
+            : !isOnBase
+            ? '↑ まず Base に切り替えてください'
             : 'Save Aura'}
         </button>
-
-        {switchError && (
-          <p className="text-red-400 text-xs text-center">{switchError}</p>
-        )}
 
         {txHash && (
           <a
