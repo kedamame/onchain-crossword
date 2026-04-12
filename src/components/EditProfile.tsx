@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSendTransaction, useReadContract, useAccount, useWaitForTransactionReceipt, useSwitchChain, useChainId } from 'wagmi';
 import { base } from 'wagmi/chains';
+import type { EIP1193Provider } from 'viem';
 import { ABI, CONTRACT_ADDRESS, THEME_PRESETS, FRAME_STYLES } from '@/lib/contract';
 import { encodeWithAttribution } from '@/lib/attribution';
 import type { Address } from 'viem';
@@ -37,6 +38,7 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
 
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
+  const { connector } = useAccount();
   const { sendTransaction, data: txHash, isPending } = useSendTransaction();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash: txHash,
@@ -74,21 +76,24 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
   const switchToBase = async (): Promise<boolean> => {
     const BASE_CHAIN_ID_HEX = `0x${base.id.toString(16)}`; // "0x2105"
 
-    // 1st: wagmi hook
+    // Get the actual provider from the connected connector (works with Rabby EIP-6963)
+    let provider: EIP1193Provider | undefined;
     try {
-      await switchChainAsync({ chainId: base.id });
-      return true;
-    } catch { /* fall through */ }
+      provider = (await connector?.getProvider()) as EIP1193Provider | undefined;
+    } catch { /* ignore */ }
 
-    // 2nd: EIP-1193 direct call (works reliably with Rabby)
-    const ethereum = (window as { ethereum?: { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> } }).ethereum;
-    if (!ethereum) {
+    // Fallback to window.ethereum if connector provider unavailable
+    if (!provider) {
+      provider = (window as unknown as { ethereum?: EIP1193Provider }).ethereum;
+    }
+
+    if (!provider) {
       setSwitchError('ウォレットが見つかりません。');
       return false;
     }
 
     try {
-      await ethereum.request({
+      await provider.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: BASE_CHAIN_ID_HEX }],
       });
@@ -97,7 +102,7 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
       // 4902 = chain not added to wallet yet
       if ((err as { code?: number })?.code === 4902) {
         try {
-          await ethereum.request({
+          await provider.request({
             method: 'wallet_addEthereumChain',
             params: [{
               chainId: BASE_CHAIN_ID_HEX,
