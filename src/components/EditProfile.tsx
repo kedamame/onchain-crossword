@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useSendTransaction, useReadContract, useAccount, useWaitForTransactionReceipt, useSwitchChain, useChainId } from 'wagmi';
 import { base } from 'wagmi/chains';
-import { UserRejectedRequestError } from 'viem';
 import { ABI, CONTRACT_ADDRESS, THEME_PRESETS, FRAME_STYLES } from '@/lib/contract';
 import { encodeWithAttribution } from '@/lib/attribution';
 import type { Address } from 'viem';
@@ -63,25 +62,17 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
   const handleSave = async () => {
     setSwitchError(null);
 
-    // If not on Base, switch first
     if (chainId !== base.id) {
       try {
         await switchChainAsync({ chainId: base.id });
-      } catch (e) {
-        if (e instanceof UserRejectedRequestError) {
-          setSwitchError('Chain switch was rejected. Please switch to Base manually.');
-        } else {
-          // Wallet may not support switchChain — try passing chainId to sendTransaction instead
-          const tx = encodeWithAttribution('setProfile', [filteredArtists, themeColor, frameStyle]);
-          sendTransaction({ ...tx, chainId: base.id });
-          return;
-        }
+      } catch {
+        setSwitchError('Base chain への切り替えに失敗しました。ウォレットで手動で切り替えてください。');
         return;
       }
     }
 
     const tx = encodeWithAttribution('setProfile', [filteredArtists, themeColor, frameStyle]);
-    sendTransaction({ ...tx, chainId: base.id });
+    sendTransaction(tx);
   };
 
   const selectedPreset = THEME_PRESETS.find((t) => t.color === themeColor);
