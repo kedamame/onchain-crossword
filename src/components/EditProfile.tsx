@@ -63,16 +63,59 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
     setSwitchError(null);
 
     if (chainId !== base.id) {
-      try {
-        await switchChainAsync({ chainId: base.id });
-      } catch {
-        setSwitchError('Base chain への切り替えに失敗しました。ウォレットで手動で切り替えてください。');
-        return;
-      }
+      const switched = await switchToBase();
+      if (!switched) return;
     }
 
     const tx = encodeWithAttribution('setProfile', [filteredArtists, themeColor, frameStyle]);
     sendTransaction(tx);
+  };
+
+  const switchToBase = async (): Promise<boolean> => {
+    const BASE_CHAIN_ID_HEX = `0x${base.id.toString(16)}`; // "0x2105"
+
+    // 1st: wagmi hook
+    try {
+      await switchChainAsync({ chainId: base.id });
+      return true;
+    } catch { /* fall through */ }
+
+    // 2nd: EIP-1193 direct call (works reliably with Rabby)
+    const ethereum = (window as { ethereum?: { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> } }).ethereum;
+    if (!ethereum) {
+      setSwitchError('ウォレットが見つかりません。');
+      return false;
+    }
+
+    try {
+      await ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: BASE_CHAIN_ID_HEX }],
+      });
+      return true;
+    } catch (err: unknown) {
+      // 4902 = chain not added to wallet yet
+      if ((err as { code?: number })?.code === 4902) {
+        try {
+          await ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: BASE_CHAIN_ID_HEX,
+              chainName: 'Base',
+              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+              rpcUrls: ['https://mainnet.base.org'],
+              blockExplorerUrls: ['https://basescan.org'],
+            }],
+          });
+          return true;
+        } catch {
+          setSwitchError('Base の追加に失敗しました。');
+          return false;
+        }
+      }
+      setSwitchError('Base chain への切り替えを拒否しました。');
+      return false;
+    }
   };
 
   const selectedPreset = THEME_PRESETS.find((t) => t.color === themeColor);
