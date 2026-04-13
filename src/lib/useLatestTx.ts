@@ -37,7 +37,11 @@ export function useLatestTx(address: Address | undefined): State {
     fetch(url)
       .then((r) => r.json())
       .then((data) => {
-        const tx = data?.result?.[0] ?? null;
+        // status='1' かつ result が配列の場合のみ使用
+        const tx =
+          data?.status === '1' && Array.isArray(data?.result)
+            ? (data.result[0] as LatestTx) ?? null
+            : null;
         setState({ tx, isLoading: false });
       })
       .catch(() => setState({ tx: null, isLoading: false }));
@@ -49,7 +53,9 @@ export function useLatestTx(address: Address | undefined): State {
 // ---- display helpers ----
 
 export function formatTimeAgo(unixTimestamp: string): string {
-  const diff = Math.floor(Date.now() / 1000) - parseInt(unixTimestamp, 10);
+  const parsed = parseInt(unixTimestamp, 10);
+  if (isNaN(parsed)) return '';
+  const diff = Math.floor(Date.now() / 1000) - parsed;
   if (diff < 60) return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
@@ -81,5 +87,6 @@ export function formatTxLabel(tx: LatestTx, myAddress: string): string {
 }
 
 export function formatAddress(addr: string): string {
+  if (!addr || addr.length < 10) return addr ?? '';
   return addr.slice(0, 6) + '...' + addr.slice(-4);
 }
