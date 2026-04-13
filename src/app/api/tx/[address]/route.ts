@@ -72,7 +72,15 @@ export async function GET(
       tx.functionName = await resolveFunctionName(tx.input);
     }
 
-    return NextResponse.json({ tx });
+    const allTxs = [extractTxList(normal), extractTxList(internal), extractTxList(token)].flat();
+    return NextResponse.json({
+      tx,
+      _debug: {
+        ownContract: OWN_CONTRACT,
+        counts: { normal: extractTxList(normal).length, internal: extractTxList(internal).length, token: extractTxList(token).length },
+        toAddresses: allTxs.map((t) => t.to),
+      },
+    });
   } catch (e) {
     return NextResponse.json({ tx: null, error: String(e) });
   }
