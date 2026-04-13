@@ -40,9 +40,8 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
     if (savedFrame) setFrameStyle(savedFrame);
   }, [profileData]);
 
-  // useAccount().chain は実際にウォレットが接続しているチェーンを返す
-  // wagmiのキャッシュではなくウォレットの実態を反映する
-  const { chain } = useAccount();
+  const { chain, connector } = useAccount();
+  const isFarcasterConnector = connector?.id === 'farcasterMiniApp';
   const isOnBase = chain?.id === base.id;
 
   const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
@@ -67,11 +66,11 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
   };
 
   const handleSave = async () => {
-    if (!isOnBase) {
+    // farcasterMiniApp コネクタはウォレット側でチェーン切り替えを処理するためスキップ
+    if (!isFarcasterConnector && !isOnBase) {
       try {
         await switchChainAsync({ chainId: base.id });
       } catch {
-        // ユーザーが拒否 or 失敗 → バナーを残してキャンセル
         return;
       }
     }
