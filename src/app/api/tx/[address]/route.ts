@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BASESCAN = 'https://api.basescan.org/api';
+// Etherscan V2 unified API — chainid=8453 targets Base Mainnet
+const BASESCAN_V2 = 'https://api.etherscan.io/v2/api';
 
 async function fetchTxList(action: string, address: string, apiKey: string) {
   const url =
-    `${BASESCAN}?module=account&action=${action}` +
+    `${BASESCAN_V2}?chainid=8453&module=account&action=${action}` +
     `&address=${address}&page=1&offset=5&sort=desc` +
     (apiKey ? `&apikey=${apiKey}` : '');
   const res = await fetch(url, { cache: 'no-store' });
@@ -47,16 +48,7 @@ export async function GET(
       pickFirst(token),
     );
 
-    return NextResponse.json({
-      tx,
-      _debug: {
-        address,
-        hasApiKey: !!apiKey,
-        normal,
-        internal,
-        token,
-      },
-    });
+    return NextResponse.json({ tx });
   } catch (e) {
     return NextResponse.json({ tx: null, error: String(e) });
   }
