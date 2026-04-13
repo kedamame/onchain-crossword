@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useReadContract, useBalance } from 'wagmi';
 import { ABI, CONTRACT_ADDRESS, getThemeGradient, FRAME_STYLES } from '@/lib/contract';
+import { useLatestTx, formatTimeAgo, formatTxLabel, formatAddress } from '@/lib/useLatestTx';
 import type { FarcasterUser } from '@/lib/farcaster';
 import type { Address } from 'viem';
 
@@ -23,6 +24,7 @@ export function AuraCard({ address, user, onEdit, compact = false }: AuraCardPro
   });
 
   const { data: balance } = useBalance({ address, chainId: 8453 });
+  const { tx, isLoading: txLoading } = useLatestTx(address);
 
   const [favoriteArtists, themeColor, frameStyle] =
     profileData ?? [[], '#7c3aed', 'glow', BigInt(0)];
@@ -143,11 +145,11 @@ export function AuraCard({ address, user, onEdit, compact = false }: AuraCardPro
           <p className="text-white/40 text-xs uppercase tracking-widest mb-2">
             ⬡ Base Activity
           </p>
-          <div className="flex gap-4">
+          <div className="flex gap-3 mb-3">
             <div className="bg-white/5 rounded-xl px-4 py-2 flex-1 text-center">
               <p className="text-white font-bold text-base">
                 {balance
-                  ? parseFloat(balance.formatted).toFixed(4)
+                  ? (Number(balance.value) / 1e18).toFixed(4)
                   : '—'}
               </p>
               <p className="text-white/40 text-xs mt-0.5">ETH</p>
@@ -157,6 +159,34 @@ export function AuraCard({ address, user, onEdit, compact = false }: AuraCardPro
               <p className="text-white/40 text-xs mt-0.5">Mainnet</p>
             </div>
           </div>
+
+          {/* Latest tx */}
+          {txLoading ? (
+            <div className="h-10 rounded-xl bg-white/5 animate-pulse" />
+          ) : tx ? (
+            <a
+              href={`https://basescan.org/tx/${tx.hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between bg-white/5 hover:bg-white/10 transition-colors rounded-xl px-4 py-2.5 group"
+            >
+              <div className="flex flex-col gap-0.5">
+                <span className="text-white text-xs font-medium">
+                  {formatTxLabel(tx, address)}
+                </span>
+                <span className="text-white/40 text-xs font-mono">
+                  → {formatAddress(tx.to)}
+                </span>
+              </div>
+              <div className="flex flex-col items-end gap-0.5">
+                <span className="text-white/40 text-xs">{formatTimeAgo(tx.timeStamp)}</span>
+                {tx.isError === '1' && (
+                  <span className="text-red-400 text-xs">failed</span>
+                )}
+                <span className="text-white/20 text-xs group-hover:text-white/40 transition-colors">↗</span>
+              </div>
+            </a>
+          ) : null}
         </div>
 
         {/* Wallet address */}
