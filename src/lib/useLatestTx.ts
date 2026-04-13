@@ -18,6 +18,24 @@ interface State {
   isLoading: boolean;
 }
 
+function buildUrl(action: string, address: string, apiKey: string): string {
+  return (
+    `https://api.basescan.org/api` +
+    `?module=account&action=${action}` +
+    `&address=${address}` +
+    `&page=1&offset=5&sort=desc` +
+    (apiKey ? `&apikey=${apiKey}` : '')
+  );
+}
+
+function extractTx(data: unknown): LatestTx | null {
+  const d = data as { status?: string; result?: unknown };
+  if (d?.status === '1' && Array.isArray(d?.result) && d.result.length > 0) {
+    return d.result[0] as LatestTx;
+  }
+  return null;
+}
+
 export function useLatestTx(address: Address | undefined): State {
   const [state, setState] = useState<State>({ tx: null, isLoading: false });
 
@@ -25,26 +43,28 @@ export function useLatestTx(address: Address | undefined): State {
     if (!address) return;
 
     const apiKey = process.env.NEXT_PUBLIC_BASESCAN_API_KEY ?? '';
-    const url =
-      `https://api.basescan.org/api` +
-      `?module=account&action=txlist` +
-      `&address=${address}` +
-      `&page=1&offset=1&sort=desc` +
-      (apiKey ? `&apikey=${apiKey}` : '');
-
     setState({ tx: null, isLoading: true });
 
-    fetch(url)
-      .then((r) => r.json())
-      .then((data) => {
-        // status='1' かつ result が配列の場合のみ使用
-        const tx =
-          data?.status === '1' && Array.isArray(data?.result)
-            ? (data.result[0] as LatestTx) ?? null
-            : null;
-        setState({ tx, isLoading: false });
-      })
-      .catch(() => setState({ tx: null, isLoading: false }));
+    // txlist (通常tx) と txlistinternal (Bridge/内部tx) を並行取得
+    Promise.all([
+      fetch(buildUrl('txlist', address, apiKey)).then((r) => r.json()).catch(() => null),
+      fetch(buildUrl('txlistinternal', address, apiKey)).then((r) => r.json()).catch(() => null),
+    ]).then(([normal, internal]) => {
+      const txNormal = extractTx(normal);
+      const txInternal = extractTx(internal);
+
+      // タイムスタンプが新しい方を採用
+      let tx: LatestTx | null = null;
+      if (txNormal && txInternal) {
+        tx = parseInt(txNormal.timeStamp) >= parseInt(txInternal.timeStamp)
+          ? txNormal
+          : txInternal;
+      } else {
+        tx = txNormal ?? txInternal;
+      }
+
+      setState({ tx, isLoading: false });
+    });
   }, [address]);
 
   return state;
