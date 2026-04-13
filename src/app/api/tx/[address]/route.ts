@@ -12,8 +12,13 @@ async function fetchTxList(action: string, address: string) {
   const url =
     `${BLOCKSCOUT}?module=account&action=${action}` +
     `&address=${address}&page=1&offset=10&sort=desc`;
-  const res = await fetch(url, { cache: 'no-store' });
-  return res.json();
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    const text = await res.text();
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 function extractTxList(data: unknown): Record<string, string>[] {
@@ -72,15 +77,7 @@ export async function GET(
       tx.functionName = await resolveFunctionName(tx.input);
     }
 
-    const allTxs = [extractTxList(normal), extractTxList(internal), extractTxList(token)].flat();
-    return NextResponse.json({
-      tx,
-      _debug: {
-        ownContract: OWN_CONTRACT,
-        counts: { normal: extractTxList(normal).length, internal: extractTxList(internal).length, token: extractTxList(token).length },
-        toAddresses: allTxs.map((t) => t.to),
-      },
-    });
+    return NextResponse.json({ tx });
   } catch (e) {
     return NextResponse.json({ tx: null, error: String(e) });
   }
