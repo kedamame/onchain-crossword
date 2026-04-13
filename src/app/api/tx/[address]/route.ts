@@ -27,6 +27,22 @@ function pickLatest(
     .sort((a, b) => parseInt(b.timeStamp) - parseInt(a.timeStamp))[0] ?? null;
 }
 
+// Extract 4-byte selector from calldata and look up function name via 4byte.directory
+async function resolveFunctionName(input: string | undefined): Promise<string> {
+  if (!input || input === '0x' || input.length < 10) return '';
+  const selector = input.slice(0, 10); // e.g. "0x22c9d06a"
+  try {
+    const res = await fetch(
+      `https://www.4byte.directory/api/v1/signatures/?hex_signature=${selector}`,
+      { next: { revalidate: 86400 } }, // cache for 24h — selectors are immutable
+    );
+    const data = await res.json() as { results?: { text_signature: string }[] };
+    return data?.results?.[0]?.text_signature ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: { address: string } }
@@ -45,6 +61,10 @@ export async function GET(
       pickFirst(internal),
       pickFirst(token),
     );
+
+    if (tx && !tx.functionName) {
+      tx.functionName = await resolveFunctionName(tx.input);
+    }
 
     return NextResponse.json({ tx });
   } catch (e) {
