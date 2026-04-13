@@ -166,7 +166,10 @@ export function AuraCard({ address, user, onEdit, compact = false }: AuraCardPro
               <p className="text-white/30 text-xs uppercase tracking-widest mb-1.5">Latest tx</p>
               <div className="flex items-center gap-2 bg-white/5 rounded-xl px-4 py-2.5">
                 <div className="w-3 h-3 rounded-full border-2 border-white/20 border-t-white/60 animate-spin flex-shrink-0" />
-                <span className="text-white/30 text-xs">Fetching latest tx...</span>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-white/30 text-xs">Fetching latest tx...</span>
+                  <span className="text-white/20 text-xs">This may take a few seconds</span>
+                </div>
               </div>
             </>
           ) : tx ? (
