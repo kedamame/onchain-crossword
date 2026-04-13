@@ -3,27 +3,33 @@ import { NextRequest, NextResponse } from 'next/server';
 // Blockscout API for Base Mainnet (free, no API key required, Etherscan-compatible)
 const BLOCKSCOUT = 'https://base.blockscout.com/api';
 
+// Exclude txs sent to this miniapp's own contract
+const OWN_CONTRACT = (
+  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? ''
+).toLowerCase();
+
 async function fetchTxList(action: string, address: string) {
   const url =
     `${BLOCKSCOUT}?module=account&action=${action}` +
-    `&address=${address}&page=1&offset=5&sort=desc`;
+    `&address=${address}&page=1&offset=10&sort=desc`;
   const res = await fetch(url, { cache: 'no-store' });
   return res.json();
 }
 
-function pickFirst(data: unknown): Record<string, string> | null {
+function extractTxList(data: unknown): Record<string, string>[] {
   const d = data as { status?: string; result?: unknown };
-  if (d?.status === '1' && Array.isArray(d?.result) && d.result.length > 0) {
-    return d.result[0] as Record<string, string>;
+  if (d?.status === '1' && Array.isArray(d?.result)) {
+    return d.result as Record<string, string>[];
   }
-  return null;
+  return [];
 }
 
 function pickLatest(
-  ...txs: (Record<string, string> | null)[]
+  lists: Record<string, string>[][],
 ): Record<string, string> | null {
-  return txs
-    .filter((t): t is Record<string, string> => t !== null)
+  return lists
+    .flat()
+    .filter((t) => t.to?.toLowerCase() !== OWN_CONTRACT)
     .sort((a, b) => parseInt(b.timeStamp) - parseInt(a.timeStamp))[0] ?? null;
 }
 
@@ -56,11 +62,11 @@ export async function GET(
       fetchTxList('tokentx', address),
     ]);
 
-    const tx = pickLatest(
-      pickFirst(normal),
-      pickFirst(internal),
-      pickFirst(token),
-    );
+    const tx = pickLatest([
+      extractTxList(normal),
+      extractTxList(internal),
+      extractTxList(token),
+    ]);
 
     if (tx && !tx.functionName) {
       tx.functionName = await resolveFunctionName(tx.input);
