@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'nodejs';
+export const maxDuration = 15; // seconds
 
 const RPC = process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org';
 const CONTRACT =
@@ -96,19 +97,31 @@ async function resolveFunctionName(input: string | undefined): Promise<string> {
   } catch { return ''; }
 }
 
-async function getLatestTx(address: string): Promise<Tx | null> {
-  const [normal, internal, token] = await Promise.all([
-    fetchTxList('txlist', address),
-    fetchTxList('txlistinternal', address),
-    fetchTxList('tokentx', address),
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promise,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
   ]);
+}
 
+async function getLatestTx(address: string): Promise<Tx | null> {
+  const result = await withTimeout(
+    Promise.all([
+      fetchTxList('txlist', address),
+      fetchTxList('txlistinternal', address),
+      fetchTxList('tokentx', address),
+    ]),
+    4000, // 4 second total timeout for all Blockscout calls
+  );
+  if (!result) return null;
+
+  const [normal, internal, token] = result;
   const tx = [...normal, ...internal, ...token]
     .filter((t) => t.to?.toLowerCase() !== OWN_CONTRACT)
     .sort((a, b) => parseInt(b.timeStamp) - parseInt(a.timeStamp))[0] ?? null;
 
   if (tx && !tx.functionName) {
-    tx.functionName = await resolveFunctionName(tx.input);
+    tx.functionName = await withTimeout(resolveFunctionName(tx.input), 2000) ?? '';
   }
   return tx;
 }
