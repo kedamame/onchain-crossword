@@ -18,53 +18,22 @@ interface State {
   isLoading: boolean;
 }
 
-function buildUrl(action: string, address: string, apiKey: string): string {
-  return (
-    `https://api.basescan.org/api` +
-    `?module=account&action=${action}` +
-    `&address=${address}` +
-    `&page=1&offset=5&sort=desc` +
-    (apiKey ? `&apikey=${apiKey}` : '')
-  );
-}
-
-function extractTx(data: unknown): LatestTx | null {
-  const d = data as { status?: string; result?: unknown };
-  if (d?.status === '1' && Array.isArray(d?.result) && d.result.length > 0) {
-    return d.result[0] as LatestTx;
-  }
-  return null;
-}
-
 export function useLatestTx(address: Address | undefined): State {
   const [state, setState] = useState<State>({ tx: null, isLoading: false });
 
   useEffect(() => {
     if (!address) return;
 
-    const apiKey = process.env.NEXT_PUBLIC_BASESCAN_API_KEY ?? '';
     setState({ tx: null, isLoading: true });
 
-    // txlist (通常tx) と txlistinternal (Bridge/内部tx) を並行取得
-    Promise.all([
-      fetch(buildUrl('txlist', address, apiKey)).then((r) => r.json()).catch(() => null),
-      fetch(buildUrl('txlistinternal', address, apiKey)).then((r) => r.json()).catch(() => null),
-    ]).then(([normal, internal]) => {
-      const txNormal = extractTx(normal);
-      const txInternal = extractTx(internal);
-
-      // タイムスタンプが新しい方を採用
-      let tx: LatestTx | null = null;
-      if (txNormal && txInternal) {
-        tx = parseInt(txNormal.timeStamp) >= parseInt(txInternal.timeStamp)
-          ? txNormal
-          : txInternal;
-      } else {
-        tx = txNormal ?? txInternal;
-      }
-
-      setState({ tx, isLoading: false });
-    });
+    fetch(`/api/tx/${address}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setState({ tx: data?.tx ?? null, isLoading: false });
+      })
+      .catch(() => {
+        setState({ tx: null, isLoading: false });
+      });
   }, [address]);
 
   return state;
