@@ -45,7 +45,7 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
   const { chain } = useAccount();
   const isOnBase = chain?.id === base.id;
 
-  const { switchChain, isPending: isSwitching } = useSwitchChain();
+  const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
   const { sendTransaction, data: txHash, isPending: isSending } = useSendTransaction();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
@@ -66,7 +66,15 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
     setArtists((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!isOnBase) {
+      try {
+        await switchChainAsync({ chainId: base.id });
+      } catch {
+        // ユーザーが拒否 or 失敗 → バナーを残してキャンセル
+        return;
+      }
+    }
     const tx = encodeWithAttribution('setProfile', [filteredArtists, themeColor, frameStyle]);
     sendTransaction(tx);
   };
@@ -95,7 +103,8 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
               Base Mainnet に切り替えてください
             </p>
             <button
-              onClick={() => switchChain({ chainId: base.id })}
+              onClick={() => switchChainAsync({ chainId: base.id }).catch(() => {})}
+
               disabled={isSwitching}
               className="w-full py-2.5 rounded-xl font-semibold text-sm text-white bg-amber-500 hover:bg-amber-400 disabled:opacity-50 transition-all"
             >
@@ -190,17 +199,17 @@ export function EditProfile({ address, onClose, onSaved }: EditProfileProps) {
         {/* Save button — disabled when on wrong network */}
         <button
           onClick={handleSave}
-          disabled={!isOnBase || isSending || isConfirming}
+          disabled={isSwitching || isSending || isConfirming}
           className={`w-full py-3 rounded-2xl font-semibold text-white transition-all ${
             selectedPreset ? `bg-gradient-to-r ${selectedPreset.gradient}` : 'bg-violet-600'
           } disabled:opacity-40`}
         >
-          {isSending
+          {isSwitching
+            ? 'Switching to Base...'
+            : isSending
             ? 'Confirm in wallet...'
             : isConfirming
             ? 'Saving on Base...'
-            : !isOnBase
-            ? '↑ まず Base に切り替えてください'
             : 'Save Aura'}
         </button>
 
