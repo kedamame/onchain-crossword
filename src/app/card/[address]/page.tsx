@@ -3,14 +3,46 @@ import ClientRedirect from './ClientRedirect';
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || 'https://aura-card-five.vercel.app';
+const RPC =
+  process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org';
+const CONTRACT =
+  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0x2966a0eFA55F03F86Dd2736c25Ef76300B9c07D9';
 
 interface Props {
   params: { address: string };
 }
 
+async function getUpdatedAt(address: string): Promise<number> {
+  try {
+    const selector = '0x0f53a470';
+    const padded = address.replace('0x', '').toLowerCase().padStart(64, '0');
+    const res = await fetch(RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{ to: CONTRACT, data: selector + padded }, 'latest'],
+        id: 1,
+      }),
+      cache: 'no-store',
+    });
+    const json = await res.json() as { result?: string };
+    if (json.result && json.result.length > 200) {
+      // updatedAt is slot 3 (bytes 96–127 = hex chars 192–255)
+      const data = json.result.slice(2);
+      return parseInt(data.slice(192, 256), 16);
+    }
+  } catch {
+    // fall through
+  }
+  return 0;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { address } = params;
-  const ogImage = `${APP_URL}/og?addr=${address}`;
+  const updatedAt = await getUpdatedAt(address);
+  const ogImage = `${APP_URL}/og?addr=${address}${updatedAt ? `&t=${updatedAt}` : ''}`;
 
   const miniAppEmbed = {
     version: '1',
