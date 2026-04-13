@@ -23,10 +23,17 @@ export function ConnectWallet({ isInMiniApp }: ConnectWalletProps) {
     }
   }, [isInMiniApp, connectors, connect, autoConnectFailed]);
 
-  // 自動接続失敗 or エラー時はフォールバックボタンを表示
+  // エラー時はフォールバックボタンを表示
   useEffect(() => {
     if (error) setAutoConnectFailed(true);
   }, [error]);
+
+  // 4秒経っても接続できなければフォールバックボタンを表示
+  useEffect(() => {
+    if (!isInMiniApp) return;
+    const timer = setTimeout(() => setAutoConnectFailed(true), 4000);
+    return () => clearTimeout(timer);
+  }, [isInMiniApp]);
 
   const browserConnectors = connectors.filter((c) => c.id !== 'farcasterMiniApp');
   const fcConnector = connectors.find((c) => c.id === 'farcasterMiniApp');
