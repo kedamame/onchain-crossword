@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useConnect } from 'wagmi';
 
 interface ConnectWalletProps {
@@ -8,19 +8,30 @@ interface ConnectWalletProps {
 }
 
 export function ConnectWallet({ isInMiniApp }: ConnectWalletProps) {
-  const { connect, connectors, isPending } = useConnect();
+  const { connect, connectors, isPending, error } = useConnect();
+  const [autoConnectFailed, setAutoConnectFailed] = useState(false);
 
-  // miniapp内ではfarcasterMiniAppコネクタで自動接続
+  // miniapp内ではfarcasterMiniAppコネクタで自動接続を試みる
   useEffect(() => {
-    if (!isInMiniApp) return;
+    if (!isInMiniApp || autoConnectFailed) return;
     const fc = connectors.find((c) => c.id === 'farcasterMiniApp');
-    if (fc) connect({ connector: fc });
-  }, [isInMiniApp, connectors, connect]);
+    if (fc) {
+      connect(
+        { connector: fc },
+        { onError: () => setAutoConnectFailed(true) },
+      );
+    }
+  }, [isInMiniApp, connectors, connect, autoConnectFailed]);
 
-  // ブラウザ表示時はfarcasterMiniApp以外を表示
+  // 自動接続失敗 or エラー時はフォールバックボタンを表示
+  useEffect(() => {
+    if (error) setAutoConnectFailed(true);
+  }, [error]);
+
   const browserConnectors = connectors.filter((c) => c.id !== 'farcasterMiniApp');
+  const fcConnector = connectors.find((c) => c.id === 'farcasterMiniApp');
 
-  if (isInMiniApp) {
+  if (isInMiniApp && !autoConnectFailed) {
     return (
       <div className="flex flex-col items-center gap-3 w-full max-w-xs mx-auto">
         <div className="w-8 h-8 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
@@ -34,7 +45,16 @@ export function ConnectWallet({ isInMiniApp }: ConnectWalletProps) {
       <p className="text-white/50 text-sm text-center mb-2">
         Connect your wallet to view or create your Aura Card
       </p>
-      {browserConnectors.map((connector) => (
+      {isInMiniApp && fcConnector && (
+        <button
+          onClick={() => connect({ connector: fcConnector })}
+          disabled={isPending}
+          className="w-full py-3 px-6 rounded-2xl font-semibold text-white bg-violet-600 hover:bg-violet-500 transition-all disabled:opacity-50"
+        >
+          Connect Farcaster Wallet
+        </button>
+      )}
+      {!isInMiniApp && browserConnectors.map((connector) => (
         <button
           key={connector.id}
           onClick={() => connect({ connector })}
@@ -44,6 +64,9 @@ export function ConnectWallet({ isInMiniApp }: ConnectWalletProps) {
           {connector.name}
         </button>
       ))}
+      {error && (
+        <p className="text-red-400 text-xs text-center">{error.message}</p>
+      )}
     </div>
   );
 }
