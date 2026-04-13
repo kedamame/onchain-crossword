@@ -37,15 +37,6 @@ export function useFarcasterMiniApp(): FarcasterState {
 
         sdk.actions.ready();
 
-        try {
-          const ethProvider = await sdk.wallet.getEthereumProvider();
-          if (ethProvider && typeof window !== 'undefined') {
-            (window as unknown as { ethereum: unknown }).ethereum = ethProvider;
-          }
-        } catch {
-          // wallet provider not available
-        }
-
         let user: FarcasterUser | null = null;
         try {
           const context = await sdk.context;
