@@ -16,14 +16,15 @@ export default function Home() {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://aura-card.vercel.app';
 
   const handleShare = () => {
-    const shareUrl = `${appUrl}?addr=${address}`;
+    const shareUrl = `${appUrl}/card/${address}`;
     const text = `Check out my Aura Card on Base! `;
+    const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(shareUrl)}`;
     if (isInMiniApp) {
       import('@farcaster/miniapp-sdk').then(({ sdk }) => {
-        sdk.actions.openUrl(`https://warpcast.com/~/compose?text=${encodeURIComponent(text + shareUrl)}`);
+        sdk.actions.openUrl(composeUrl);
       });
     } else {
-      window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(text + shareUrl)}`, '_blank');
+      window.open(composeUrl, '_blank');
     }
   };
 
