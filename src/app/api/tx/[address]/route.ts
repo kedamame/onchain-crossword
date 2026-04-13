@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Etherscan V2 unified API — chainid=8453 targets Base Mainnet
-const BASESCAN_V2 = 'https://api.etherscan.io/v2/api';
+// Basescan V2 API (chain-specific, free tier supported)
+const BASESCAN_V2 = 'https://api.basescan.org/v2/api';
 
 async function fetchTxList(action: string, address: string, apiKey: string) {
   const url =
-    `${BASESCAN_V2}?chainid=8453&module=account&action=${action}` +
+    `${BASESCAN_V2}?module=account&action=${action}` +
     `&address=${address}&page=1&offset=5&sort=desc` +
     (apiKey ? `&apikey=${apiKey}` : '');
   const res = await fetch(url, { cache: 'no-store' });
