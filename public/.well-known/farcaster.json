@@ -7,24 +7,24 @@
   "miniapp": {
     "version": "1",
     "name": "Aura Card",
-    "homeUrl": "https://aura-card.vercel.app",
-    "iconUrl": "https://aura-card.vercel.app/icon.png",
-    "splashImageUrl": "https://aura-card.vercel.app/splash.png",
+    "homeUrl": "https://aura-card-five.vercel.app",
+    "iconUrl": "https://aura-card-five.vercel.app/icon.png",
+    "splashImageUrl": "https://aura-card-five.vercel.app/splash.png",
     "splashBackgroundColor": "#080810",
     "subtitle": "Living onchain identity on Base",
     "description": "Create your Aura Card — a dynamic profile that shows your music taste, Base activity, and NFT style. Powered by Base chain.",
     "screenshotUrls": [
-      "https://aura-card.vercel.app/screenshot1.png",
-      "https://aura-card.vercel.app/screenshot2.png",
-      "https://aura-card.vercel.app/screenshot3.png"
+      "https://aura-card-five.vercel.app/screenshot1.png",
+      "https://aura-card-five.vercel.app/screenshot2.png",
+      "https://aura-card-five.vercel.app/screenshot3.png"
     ],
     "primaryCategory": "social",
     "tags": ["identity", "base", "onchain", "music", "profile"],
-    "heroImageUrl": "https://aura-card.vercel.app/og-image.png",
+    "heroImageUrl": "https://aura-card-five.vercel.app/og-image.png",
     "tagline": "Your living onchain identity",
     "ogTitle": "Aura Card",
     "ogDescription": "Dynamic onchain profile card on Base. Show your music, style & activity.",
-    "ogImageUrl": "https://aura-card.vercel.app/og-image.png",
+    "ogImageUrl": "https://aura-card-five.vercel.app/og-image.png",
     "requiredChains": ["eip155:8453"],
     "requiredCapabilities": [],
     "noindex": false

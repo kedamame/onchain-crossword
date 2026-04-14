@@ -24,12 +24,11 @@ export async function GET() {
           justifyContent: 'center',
           background: '#080810',
           color: 'white',
-          fontFamily: 'sans-serif',
           gap: 48,
           padding: 80,
         }}
       >
-        <div style={{ fontSize: 48, fontWeight: 800 }}>Choose Your Aura</div>
+        <div style={{ fontSize: 48, fontWeight: 800, display: 'flex' }}>Choose Your Aura</div>
 
         <div
           style={{
@@ -47,7 +46,7 @@ export async function GET() {
                 width: 160,
                 height: 160,
                 borderRadius: 24,
-                background: `radial-gradient(circle at 30% 30%, ${t.color}88, ${t.color}22)`,
+                background: t.color + '33',
                 border: `2px solid ${t.color}66`,
                 display: 'flex',
                 flexDirection: 'column',
@@ -62,15 +61,16 @@ export async function GET() {
                   height: 64,
                   borderRadius: 32,
                   background: t.color,
+                  display: 'flex',
                 }}
               />
-              <span style={{ fontSize: 22, color: 'rgba(255,255,255,0.8)' }}>{t.label}</span>
+              <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.8)', display: 'flex' }}>{t.label}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>
-          6 aura colors · 4 frame styles
+        <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.3)', display: 'flex' }}>
+          6 aura colors - 4 frame styles
         </div>
       </div>
     ),

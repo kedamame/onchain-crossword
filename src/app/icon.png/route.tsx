@@ -26,7 +26,7 @@ export async function GET() {
             justifyContent: 'center',
           }}
         >
-          <div style={{ fontSize: 400, lineHeight: 1, color: 'white' }}>✦</div>
+          <div style={{ fontSize: 320, fontWeight: 800, color: 'white', display: 'flex' }}>A</div>
         </div>
       </div>
     ),

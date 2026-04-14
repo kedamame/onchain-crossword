@@ -15,7 +15,6 @@ export async function GET() {
           justifyContent: 'center',
           background: '#080810',
           color: 'white',
-          fontFamily: 'sans-serif',
           gap: 32,
           padding: 80,
         }}
@@ -27,7 +26,6 @@ export async function GET() {
             background: 'rgba(15,15,25,0.95)',
             borderRadius: 40,
             border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 0 60px rgba(124,58,237,0.4)',
             padding: 48,
             display: 'flex',
             flexDirection: 'column',
@@ -45,35 +43,39 @@ export async function GET() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 40,
-                color: 'white',
-                fontWeight: 800,
               }}
             >
-              A
+              <div style={{ fontSize: 48, fontWeight: 800, color: 'white', display: 'flex' }}>A</div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span style={{ fontSize: 32, fontWeight: 700 }}>alice.eth</span>
-              <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.4)' }}>@alice</span>
-              <span style={{ fontSize: 16, color: '#7c3aed' }}>✦ Glow aura</span>
+              <div style={{ fontSize: 32, fontWeight: 700 }}>alice.eth</div>
+              <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.4)' }}>@alice</div>
+              <div style={{ fontSize: 16, color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 4, background: '#7c3aed', display: 'flex' }} />
+                <div style={{ display: 'flex' }}>Glow aura</div>
+              </div>
             </div>
           </div>
 
           {/* Artists */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', letterSpacing: 4 }}>
-              ♪ VIBING TO
-            </span>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', letterSpacing: 4, display: 'flex' }}>
+              VIBING TO
+            </div>
             <div style={{ display: 'flex', gap: 12 }}>
               {['Tame Impala', 'FKA Twigs', 'BROCKHAMPTON'].map((a) => (
                 <div
                   key={a}
                   style={{
-                    padding: '10px 20px',
+                    paddingTop: 10,
+                    paddingBottom: 10,
+                    paddingLeft: 20,
+                    paddingRight: 20,
                     borderRadius: 100,
                     background: 'linear-gradient(to right, #7c3aed, #4f46e5)',
                     fontSize: 18,
                     color: 'white',
+                    display: 'flex',
                   }}
                 >
                   {a}
@@ -89,35 +91,41 @@ export async function GET() {
                 flex: 1,
                 background: 'rgba(255,255,255,0.05)',
                 borderRadius: 20,
-                padding: '20px',
+                paddingTop: 20,
+                paddingBottom: 20,
+                paddingLeft: 20,
+                paddingRight: 20,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: 8,
               }}
             >
-              <span style={{ fontSize: 28, fontWeight: 700 }}>0.0420</span>
-              <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)' }}>ETH</span>
+              <div style={{ fontSize: 28, fontWeight: 700, display: 'flex' }}>0.0420</div>
+              <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', display: 'flex' }}>ETH</div>
             </div>
             <div
               style={{
                 flex: 1,
                 background: 'rgba(255,255,255,0.05)',
                 borderRadius: 20,
-                padding: '20px',
+                paddingTop: 20,
+                paddingBottom: 20,
+                paddingLeft: 20,
+                paddingRight: 20,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: 8,
               }}
             >
-              <span style={{ fontSize: 28, fontWeight: 700 }}>Base</span>
-              <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)' }}>Mainnet</span>
+              <div style={{ fontSize: 28, fontWeight: 700, display: 'flex' }}>Base</div>
+              <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', display: 'flex' }}>Mainnet</div>
             </div>
           </div>
         </div>
 
-        <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.3)' }}>
+        <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.3)', display: 'flex' }}>
           Your Aura Card lives on Base chain
         </div>
       </div>

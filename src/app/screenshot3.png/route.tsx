@@ -15,12 +15,11 @@ export async function GET() {
           justifyContent: 'center',
           background: '#080810',
           color: 'white',
-          fontFamily: 'sans-serif',
           gap: 48,
           padding: 80,
         }}
       >
-        <div style={{ fontSize: 48, fontWeight: 800, textAlign: 'center' }}>
+        <div style={{ fontSize: 48, fontWeight: 800, display: 'flex' }}>
           Share Your Identity
         </div>
 
@@ -31,7 +30,6 @@ export async function GET() {
             background: 'rgba(15,15,25,0.95)',
             borderRadius: 40,
             border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 0 80px rgba(6,182,212,0.4)',
             padding: 48,
             display: 'flex',
             flexDirection: 'column',
@@ -39,46 +37,56 @@ export async function GET() {
             gap: 32,
           }}
         >
-          <div style={{ fontSize: 48, lineHeight: 1, color: '#06b6d4' }}>✦</div>
-          <div style={{ fontSize: 36, fontWeight: 700 }}>bob.eth</div>
+          <div
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              background: '#06b6d4',
+              display: 'flex',
+            }}
+          />
+          <div style={{ fontSize: 36, fontWeight: 700, display: 'flex' }}>bob.eth</div>
           <div style={{ display: 'flex', gap: 12 }}>
             {['Aphex Twin', 'Burial'].map((a) => (
               <div
                 key={a}
                 style={{
-                  padding: '10px 24px',
+                  paddingTop: 10,
+                  paddingBottom: 10,
+                  paddingLeft: 24,
+                  paddingRight: 24,
                   borderRadius: 100,
                   background: 'linear-gradient(to right, #06b6d4, #3b82f6)',
                   fontSize: 20,
                   color: 'white',
+                  display: 'flex',
                 }}
               >
                 {a}
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.3)' }}>
-            Saved on Base · Forever yours
+          <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.3)', display: 'flex' }}>
+            Saved on Base - Forever yours
           </div>
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: 20,
-            marginTop: 16,
-          }}
-        >
+        <div style={{ display: 'flex', gap: 20 }}>
           {['Farcaster', 'Twitter', 'Discord'].map((platform) => (
             <div
               key={platform}
               style={{
-                padding: '14px 32px',
+                paddingTop: 14,
+                paddingBottom: 14,
+                paddingLeft: 32,
+                paddingRight: 32,
                 borderRadius: 100,
                 background: 'rgba(255,255,255,0.08)',
                 border: '1px solid rgba(255,255,255,0.12)',
                 fontSize: 24,
                 color: 'rgba(255,255,255,0.7)',
+                display: 'flex',
               }}
             >
               {platform}
