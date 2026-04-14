@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'nodejs';
-export const maxDuration = 15; // seconds
+export const maxDuration = 15;
 
 const RPC = process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org';
 const CONTRACT =
@@ -9,7 +9,7 @@ const CONTRACT =
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || 'https://aura-card-five.vercel.app';
 
-// ── profile ──────────────────────────────────────────────────────────────────
+// ── profile ───────────────────────────────────────────────────────────────────
 
 function encodeGetProfile(address: string): string {
   const selector = '0x0f53a470';
@@ -60,7 +60,7 @@ function decodeProfile(hex: string): { artists: string[]; themeColor: string } {
   }
 }
 
-// ── latest tx ─────────────────────────────────────────────────────────────────
+// ── tx ────────────────────────────────────────────────────────────────────────
 
 interface Tx {
   hash: string;
@@ -70,7 +70,6 @@ interface Tx {
   value: string;
   functionName?: string;
   tokenSymbol?: string;
-  input?: string;
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
@@ -80,21 +79,11 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   ]);
 }
 
-async function getLatestTx(address: string): Promise<Tx | null> {
-  // Call our own /api/tx endpoint (already works reliably)
-  return withTimeout(
-    fetch(`${APP_URL}/api/tx/${address}`, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((data: { tx?: Tx }) => data.tx ?? null),
-    6000,
-  );
-}
-
 function formatTxLabel(tx: Tx, address: string): string {
   const isOutgoing = tx.from.toLowerCase() === address.toLowerCase();
   if (tx.tokenSymbol) return isOutgoing ? `Sent ${tx.tokenSymbol}` : `Received ${tx.tokenSymbol}`;
-  const funcShort = tx.functionName ? tx.functionName.split('(')[0] : null;
-  if (funcShort) return `${funcShort}()`;
+  const funcShort = tx.functionName ? tx.functionName.split('(')[0] + '()' : null;
+  if (funcShort) return funcShort;
   const eth = Number(tx.value) / 1e18;
   if (!isOutgoing) return `Received ${eth > 0 ? eth.toFixed(4) + ' ETH' : 'tx'}`;
   if (eth > 0) return `Sent ${eth.toFixed(4)} ETH`;
@@ -107,6 +96,11 @@ function formatTimeAgo(ts: string): string {
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function formatAddress(addr: string): string {
+  if (!addr || addr.length < 10) return addr ?? '';
+  return addr.slice(0, 6) + '...' + addr.slice(-4);
 }
 
 // ── color map ─────────────────────────────────────────────────────────────────
@@ -128,10 +122,12 @@ export async function GET(req: Request) {
 
   let artists: string[] = [];
   let themeColor = '#7c3aed';
+  let ethBalance: string | null = null;
   let latestTx: Tx | null = null;
 
   if (/^0x[0-9a-fA-F]{40}$/.test(address)) {
-    const [profileRes, txRes] = await Promise.allSettled([
+    const [profileRes, balanceRes, txRes] = await Promise.allSettled([
+      // profile
       fetch(RPC, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -142,7 +138,26 @@ export async function GET(req: Request) {
           id: 1,
         }),
       }).then((r) => r.json() as Promise<{ result?: string }>),
-      getLatestTx(address),
+
+      // ETH balance
+      fetch(RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_getBalance',
+          params: [address, 'latest'],
+          id: 2,
+        }),
+      }).then((r) => r.json() as Promise<{ result?: string }>),
+
+      // latest tx via internal API
+      withTimeout(
+        fetch(`${APP_URL}/api/tx/${address}`, { cache: 'no-store' })
+          .then((r) => r.json())
+          .then((d: { tx?: Tx }) => d.tx ?? null),
+        6000,
+      ),
     ]);
 
     if (profileRes.status === 'fulfilled' && profileRes.value?.result && profileRes.value.result.length > 10) {
@@ -150,15 +165,19 @@ export async function GET(req: Request) {
       artists = decoded.artists;
       themeColor = decoded.themeColor;
     }
+
+    if (balanceRes.status === 'fulfilled' && balanceRes.value?.result) {
+      const wei = parseInt(balanceRes.value.result, 16);
+      ethBalance = (wei / 1e18).toFixed(4);
+    }
+
     if (txRes.status === 'fulfilled') {
       latestTx = txRes.value;
     }
   }
 
-  const [from, to, label] = COLOR_MAP[themeColor] ?? ['#7c3aed', '#6366f1', 'Aurora'];
+  const [from, , label] = COLOR_MAP[themeColor] ?? ['#7c3aed', '#6366f1', 'Aurora'];
   const short = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Aura Card';
-  const txLabel = latestTx ? formatTxLabel(latestTx, address) : null;
-  const txTime = latestTx ? formatTimeAgo(latestTx.timeStamp) : null;
 
   return new ImageResponse(
     (
@@ -170,103 +189,101 @@ export async function GET(req: Request) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#0d0b18',
+          background: '#080d14',
         }}
       >
         <div
           style={{
             width: 560,
-            background: '#1a1730',
-            border: `2px solid ${from}`,
+            background: '#111827',
+            border: `1px solid rgba(255,255,255,0.12)`,
             borderRadius: 28,
             padding: 36,
             display: 'flex',
             flexDirection: 'column',
-            gap: 18,
+            gap: 20,
           }}
         >
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: 26,
-                background: from,
-                display: 'flex',
-                flexShrink: 0,
-              }}
-            />
+            <div style={{ width: 56, height: 56, borderRadius: 28, background: from, display: 'flex', flexShrink: 0 }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ color: '#ffffff', fontWeight: 700, fontSize: 22 }}>{short}</div>
-              <div style={{ color: from, fontSize: 13 }}>{`${label} Aura - Base`}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 4, background: from, display: 'flex' }} />
+                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{`${label} aura`}</div>
+              </div>
             </div>
           </div>
 
           {/* Divider */}
-          <div style={{ height: 1, background: from, display: 'flex', opacity: 0.25 }} />
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', display: 'flex' }} />
 
-          {/* Latest tx */}
-          {txLabel && txTime && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: 2, display: 'flex' }}>
-                BASE ACTIVITY
+          {/* Base Activity */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: 2, display: 'flex' }}>
+              BASE ACTIVITY
+            </div>
+            {/* ETH + Network boxes */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 14, paddingTop: 10, paddingBottom: 10, paddingLeft: 16, paddingRight: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <div style={{ color: '#ffffff', fontWeight: 700, fontSize: 18 }}>{ethBalance ?? '—'}</div>
+                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11 }}>ETH</div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    background: to,
-                    display: 'flex',
-                    flexShrink: 0,
-                  }}
-                />
-                <div style={{ color: '#ffffff', fontSize: 15, fontWeight: 600, display: 'flex' }}>
-                  {txLabel}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13, display: 'flex', marginLeft: 4 }}>
-                  {txTime}
-                </div>
+              <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 14, paddingTop: 10, paddingBottom: 10, paddingLeft: 16, paddingRight: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <div style={{ color: '#ffffff', fontWeight: 700, fontSize: 18 }}>Base</div>
+                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11 }}>Mainnet</div>
               </div>
             </div>
-          )}
 
-          {/* Artists */}
-          {artists.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: 2, display: 'flex' }}>
-                VIBING TO
+            {/* Latest tx */}
+            {latestTx && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 10, letterSpacing: 2, display: 'flex' }}>
+                  LATEST TX
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 14, paddingTop: 10, paddingBottom: 10, paddingLeft: 16, paddingRight: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <div style={{ color: '#ffffff', fontSize: 14, fontWeight: 600, display: 'flex' }}>
+                      {formatTxLabel(latestTx, address)}
+                    </div>
+                    <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, display: 'flex' }}>
+                      {`-> ${formatAddress(latestTx.to)}`}
+                    </div>
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, display: 'flex' }}>
+                    {formatTimeAgo(latestTx.timeStamp)}
+                  </div>
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* Vibing to */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: 2, display: 'flex' }}>
+              VIBING TO
+            </div>
+            {artists.length > 0 ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {artists.map((a, i) => (
                   <div
                     key={i}
                     style={{
-                      paddingTop: 5,
-                      paddingBottom: 5,
-                      paddingLeft: 16,
-                      paddingRight: 16,
-                      borderRadius: 100,
-                      background: from,
-                      color: '#ffffff',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      display: 'flex',
+                      paddingTop: 5, paddingBottom: 5, paddingLeft: 14, paddingRight: 14,
+                      borderRadius: 100, background: from,
+                      color: '#ffffff', fontSize: 13, fontWeight: 600, display: 'flex',
                     }}
                   >
                     {a}
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Footer */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-            <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12 }}>on Base Mainnet</div>
-            <div style={{ color: to, fontSize: 18, fontWeight: 800 }}>Aura Card</div>
+            ) : (
+              <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 13, fontStyle: 'italic', display: 'flex' }}>
+                No artists set yet
+              </div>
+            )}
           </div>
         </div>
       </div>
