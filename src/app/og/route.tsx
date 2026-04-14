@@ -6,8 +6,8 @@ export const maxDuration = 15; // seconds
 const RPC = process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org';
 const CONTRACT =
   process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0x2966a0eFA55F03F86Dd2736c25Ef76300B9c07D9';
-const BLOCKSCOUT = 'https://base.blockscout.com/api';
-const OWN_CONTRACT = CONTRACT.toLowerCase();
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || 'https://aura-card-five.vercel.app';
 
 // ── profile ──────────────────────────────────────────────────────────────────
 
@@ -73,30 +73,6 @@ interface Tx {
   input?: string;
 }
 
-async function fetchTxList(action: string, address: string): Promise<Tx[]> {
-  try {
-    const url =
-      `${BLOCKSCOUT}?module=account&action=${action}` +
-      `&address=${address}&page=1&offset=10&sort=desc`;
-    const res = await fetch(url, { cache: 'no-store' });
-    const json = JSON.parse(await res.text()) as { status?: string; result?: unknown };
-    if (json.status === '1' && Array.isArray(json.result)) return json.result as Tx[];
-  } catch { /* ignore */ }
-  return [];
-}
-
-async function resolveFunctionName(input: string | undefined): Promise<string> {
-  if (!input || input === '0x' || input.length < 10) return '';
-  try {
-    const res = await fetch(
-      `https://www.4byte.directory/api/v1/signatures/?hex_signature=${input.slice(0, 10)}`,
-      { next: { revalidate: 86400 } },
-    );
-    const data = await res.json() as { results?: { text_signature: string }[] };
-    return data?.results?.[0]?.text_signature ?? '';
-  } catch { return ''; }
-}
-
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   return Promise.race([
     promise,
@@ -105,18 +81,13 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
 }
 
 async function getLatestTx(address: string): Promise<Tx | null> {
-  // OG image: only fetch txlist (1 request) to stay within timeout budget
-  const txs = await withTimeout(fetchTxList('txlist', address), 5000);
-  if (!txs) return null;
-
-  const tx = txs
-    .filter((t) => t.to?.toLowerCase() !== OWN_CONTRACT)
-    .sort((a, b) => parseInt(b.timeStamp) - parseInt(a.timeStamp))[0] ?? null;
-
-  if (tx && !tx.functionName) {
-    tx.functionName = await withTimeout(resolveFunctionName(tx.input), 2000) ?? '';
-  }
-  return tx;
+  // Call our own /api/tx endpoint (already works reliably)
+  return withTimeout(
+    fetch(`${APP_URL}/api/tx/${address}`, { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data: { tx?: Tx }) => data.tx ?? null),
+    6000,
+  );
 }
 
 function formatTxLabel(tx: Tx, address: string): string {
