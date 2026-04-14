@@ -7,8 +7,8 @@ export async function GET() {
     (
       <div
         style={{
-          width: '100%',
-          height: '100%',
+          width: 1200,
+          height: 630,
           display: 'flex',
           background: '#080810',
         }}
@@ -22,7 +22,7 @@ export async function GET() {
             justifyContent: 'center',
             paddingLeft: 72,
             paddingRight: 48,
-            gap: 28,
+            gap: 24,
           }}
         >
           {/* Logo */}
@@ -45,60 +45,45 @@ export async function GET() {
           </div>
 
           {/* Tagline */}
-          <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.55)', display: 'flex', lineHeight: 1.4 }}>
+          <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.55)', display: 'flex' }}>
             Your living onchain identity on Base
           </div>
 
           {/* Feature list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {[
-              { dot: '#7c3aed', text: 'Set your favorite artists' },
-              { dot: '#06b6d4', text: 'Track Base activity' },
-              { dot: '#f97316', text: 'Choose your Aura color' },
-            ].map((item) => (
-              <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 5,
-                    background: item.dot,
-                    display: 'flex',
-                    flexShrink: 0,
-                  }}
-                />
-                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, display: 'flex' }}>{item.text}</div>
-              </div>
-            ))}
-          </div>
+          {[
+            { dot: '#7c3aed', text: 'Set your favorite artists' },
+            { dot: '#06b6d4', text: 'Track Base activity' },
+            { dot: '#f97316', text: 'Choose your Aura color' },
+          ].map((item) => (
+            <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 5,
+                  background: item.dot,
+                  display: 'flex',
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, display: 'flex' }}>{item.text}</div>
+            </div>
+          ))}
 
           {/* Base badge */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              paddingTop: 8,
-              paddingBottom: 8,
-              paddingLeft: 18,
-              paddingRight: 18,
-              borderRadius: 100,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
-            }}
-          >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 8, height: 8, borderRadius: 4, background: '#3b82f6', display: 'flex' }} />
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, display: 'flex' }}>Powered by Base</div>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, display: 'flex' }}>Powered by Base</div>
           </div>
         </div>
 
         {/* Divider */}
-        <div style={{ width: 1, background: 'rgba(255,255,255,0.06)', display: 'flex' }} />
+        <div style={{ width: 1, height: 630, background: 'rgba(255,255,255,0.06)', display: 'flex' }} />
 
         {/* Right: card mockup */}
         <div
           style={{
-            flex: 1,
+            width: 719,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -142,13 +127,15 @@ export async function GET() {
 
             {/* Base activity */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: 2, display: 'flex' }}>BASE ACTIVITY</div>
+              <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: 2, display: 'flex' }}>
+                BASE ACTIVITY
+              </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 12, paddingTop: 10, paddingBottom: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                <div style={{ width: 160, background: 'rgba(255,255,255,0.05)', borderRadius: 12, paddingTop: 10, paddingBottom: 10, paddingLeft: 12, paddingRight: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
                   <div style={{ color: 'white', fontWeight: 700, fontSize: 15, display: 'flex' }}>0.0024</div>
                   <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, display: 'flex' }}>ETH</div>
                 </div>
-                <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 12, paddingTop: 10, paddingBottom: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                <div style={{ width: 160, background: 'rgba(255,255,255,0.05)', borderRadius: 12, paddingTop: 10, paddingBottom: 10, paddingLeft: 12, paddingRight: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
                   <div style={{ color: 'white', fontWeight: 700, fontSize: 15, display: 'flex' }}>Base</div>
                   <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, display: 'flex' }}>Mainnet</div>
                 </div>
@@ -157,7 +144,9 @@ export async function GET() {
 
             {/* Vibing to */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: 2, display: 'flex' }}>VIBING TO</div>
+              <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: 2, display: 'flex' }}>
+                VIBING TO
+              </div>
               <div style={{ display: 'flex', gap: 7 }}>
                 {['Tame Impala', 'FKA Twigs'].map((a) => (
                   <div
