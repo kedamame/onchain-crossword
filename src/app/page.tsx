@@ -12,6 +12,7 @@ import { CrosswordGrid } from '@/components/CrosswordGrid';
 import { CluePanel } from '@/components/CluePanel';
 import { CompletionStamp } from '@/components/CompletionStamp';
 import { useFarcasterMiniApp } from '@/lib/farcaster';
+import { useStreakRecord } from '@/lib/useStreakRecord';
 
 const STORAGE_KEY = 'onchain-crossword';
 
@@ -32,6 +33,7 @@ export default function Home() {
   const { across: acrossClues, down: downClues } = getClues(puzzle);
 
   const { isInMiniApp } = useFarcasterMiniApp();
+  const streakRecord = useStreakRecord(dayNumber);
 
   const [userGrid, setUserGrid] = useState<string[][]>(() =>
     Array.from({ length: puzzle.rows }, () => Array(puzzle.cols).fill('')),
@@ -388,6 +390,11 @@ export default function Home() {
           puzzleTitle={puzzle.title}
           onShare={handleShare}
           onClose={() => setShowStamp(false)}
+          canRecord={streakRecord.canRecord}
+          alreadyRecorded={streakRecord.alreadyRecorded}
+          txStatus={streakRecord.txStatus}
+          txHash={streakRecord.txHash}
+          onRecord={streakRecord.onRecord}
         />
       )}
     </>

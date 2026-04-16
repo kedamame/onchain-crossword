@@ -1,11 +1,19 @@
 'use client';
 
+import type { TxStatus } from '@/lib/useStreakRecord';
+
 interface Props {
   streak: number;
   dayNumber: number;
   puzzleTitle: string;
   onShare: () => void;
   onClose: () => void;
+  // On-chain recording
+  canRecord: boolean;
+  alreadyRecorded: boolean;
+  txStatus: TxStatus;
+  txHash: `0x${string}` | undefined;
+  onRecord: () => void;
 }
 
 const TIERS = [
@@ -16,12 +24,31 @@ const TIERS = [
   { min: 0,  name: 'BRONZE',    color: '#CD7F32', border: '2px solid #CD7F32', radius: '4px' },
 ] as const;
 
-export function CompletionStamp({ streak, dayNumber, puzzleTitle, onShare, onClose }: Props) {
+const FONT = 'var(--font-space)';
+const BTN: React.CSSProperties = {
+  width: '100%',
+  padding: '14px',
+  fontFamily: FONT,
+  fontSize: '13px',
+  fontWeight: 700,
+  letterSpacing: '0.15em',
+  border: 'none',
+  cursor: 'pointer',
+};
+
+export function CompletionStamp({
+  streak,
+  dayNumber,
+  puzzleTitle,
+  onShare,
+  onClose,
+  canRecord,
+  alreadyRecorded,
+  txStatus,
+  txHash,
+  onRecord,
+}: Props) {
   const tier = TIERS.find((t) => streak >= t.min) ?? TIERS[TIERS.length - 1];
-  const stampTier = tier.name;
-  const stampColor = tier.color;
-  const stampBorder = tier.border;
-  const stampRadius = tier.radius;
 
   return (
     <div
@@ -55,8 +82,8 @@ export function CompletionStamp({ streak, dayNumber, puzzleTitle, onShare, onClo
           style={{
             width: '160px',
             height: '160px',
-            border: stampBorder,
-            borderRadius: stampRadius,
+            border: tier.border,
+            borderRadius: tier.radius,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -66,89 +93,34 @@ export function CompletionStamp({ streak, dayNumber, puzzleTitle, onShare, onClo
             position: 'relative',
           }}
         >
-          {/* Inner border */}
           <div
             style={{
               position: 'absolute',
               inset: '6px',
-              border: `1px solid ${stampColor}`,
-              borderRadius: stampRadius,
+              border: `1px solid ${tier.color}`,
+              borderRadius: tier.radius,
             }}
           />
-          <span
-            style={{
-              fontFamily: 'var(--font-space)',
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.15em',
-              color: stampColor,
-              zIndex: 1,
-            }}
-          >
+          <span style={{ fontFamily: FONT, fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', color: tier.color, zIndex: 1 }}>
             ONCHAIN
           </span>
-          <span
-            style={{
-              fontFamily: 'var(--font-space)',
-              fontSize: '32px',
-              fontWeight: 900,
-              color: stampColor,
-              lineHeight: 1,
-              zIndex: 1,
-            }}
-          >
+          <span style={{ fontFamily: FONT, fontSize: '32px', fontWeight: 900, color: tier.color, lineHeight: 1, zIndex: 1 }}>
             {streak}
           </span>
-          <span
-            style={{
-              fontFamily: 'var(--font-space)',
-              fontSize: '9px',
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              color: stampColor,
-              zIndex: 1,
-            }}
-          >
+          <span style={{ fontFamily: FONT, fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', color: tier.color, zIndex: 1 }}>
             DAY STREAK
           </span>
-          <span
-            style={{
-              fontFamily: 'var(--font-space)',
-              fontSize: '8px',
-              fontWeight: 700,
-              letterSpacing: '0.2em',
-              color: '#000',
-              marginTop: '4px',
-              zIndex: 1,
-            }}
-          >
-            {stampTier}
+          <span style={{ fontFamily: FONT, fontSize: '8px', fontWeight: 700, letterSpacing: '0.2em', color: '#000', marginTop: '4px', zIndex: 1 }}>
+            {tier.name}
           </span>
         </div>
 
         {/* Info */}
         <div style={{ textAlign: 'center', width: '100%' }}>
-          <div
-            style={{
-              fontFamily: 'var(--font-space)',
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.2em',
-              color: '#666',
-              marginBottom: '4px',
-            }}
-          >
+          <div style={{ fontFamily: FONT, fontSize: '11px', fontWeight: 700, letterSpacing: '0.2em', color: '#666', marginBottom: '4px' }}>
             PUZZLE #{dayNumber} — {puzzleTitle}
           </div>
-          <div
-            style={{
-              fontFamily: 'var(--font-space)',
-              fontSize: '22px',
-              fontWeight: 900,
-              color: '#000',
-              letterSpacing: '-0.02em',
-            }}
-          >
+          <div style={{ fontFamily: FONT, fontSize: '22px', fontWeight: 900, color: '#000', letterSpacing: '-0.02em' }}>
             COMPLETE
           </div>
         </div>
@@ -165,10 +137,10 @@ export function CompletionStamp({ streak, dayNumber, puzzleTitle, onShare, onClo
             alignItems: 'center',
           }}
         >
-          <div style={{ fontFamily: 'var(--font-space)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em', color: '#666' }}>
+          <div style={{ fontFamily: FONT, fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em', color: '#666' }}>
             NEXT TIER
           </div>
-          <div style={{ fontFamily: 'var(--font-space)', fontSize: '11px', fontWeight: 700, color: '#000' }}>
+          <div style={{ fontFamily: FONT, fontSize: '11px', fontWeight: 700, color: '#000' }}>
             {streak < 3
               ? `${3 - streak} days to SILVER`
               : streak < 7
@@ -183,37 +155,61 @@ export function CompletionStamp({ streak, dayNumber, puzzleTitle, onShare, onClo
 
         {/* Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+
+          {/* On-chain record button — only when contract is deployed + wallet connected */}
+          {canRecord && (
+            txStatus === 'success' ? (
+              <a
+                href={txHash ? `https://basescan.org/tx/${txHash}` : '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  ...BTN,
+                  display: 'block',
+                  background: '#00FF87',
+                  color: '#000',
+                  textAlign: 'center',
+                  textDecoration: 'none',
+                  boxSizing: 'border-box',
+                }}
+              >
+                STREAK RECORDED — VIEW TX
+              </a>
+            ) : alreadyRecorded ? (
+              <button disabled style={{ ...BTN, background: '#f0f0f0', color: '#999', border: '1px solid #e0e0e0', cursor: 'default' }}>
+                ALREADY RECORDED TODAY
+              </button>
+            ) : (
+              <button
+                onClick={onRecord}
+                disabled={txStatus === 'pending'}
+                style={{
+                  ...BTN,
+                  background: txStatus === 'error' ? '#fff' : '#000',
+                  color: txStatus === 'error' ? '#cc0000' : '#fff',
+                  border: txStatus === 'error' ? '2px solid #cc0000' : 'none',
+                  opacity: txStatus === 'pending' ? 0.55 : 1,
+                  cursor: txStatus === 'pending' ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {txStatus === 'pending'
+                  ? 'RECORDING...'
+                  : txStatus === 'error'
+                    ? 'FAILED — RETRY'
+                    : 'RECORD STREAK ON-CHAIN'}
+              </button>
+            )
+          )}
+
           <button
             onClick={onShare}
-            style={{
-              width: '100%',
-              padding: '14px',
-              background: '#000',
-              color: '#fff',
-              fontFamily: 'var(--font-space)',
-              fontSize: '13px',
-              fontWeight: 700,
-              letterSpacing: '0.15em',
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            style={{ ...BTN, background: '#000', color: '#fff' }}
           >
             SHARE ON FARCASTER
           </button>
           <button
             onClick={onClose}
-            style={{
-              width: '100%',
-              padding: '14px',
-              background: '#fff',
-              color: '#000',
-              fontFamily: 'var(--font-space)',
-              fontSize: '13px',
-              fontWeight: 700,
-              letterSpacing: '0.15em',
-              border: '1px solid #000',
-              cursor: 'pointer',
-            }}
+            style={{ ...BTN, background: '#fff', color: '#000', border: '1px solid #000' }}
           >
             CLOSE
           </button>
