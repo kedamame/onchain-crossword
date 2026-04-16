@@ -2,42 +2,50 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AppProvider } from '@/components/providers/AppProvider';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://aura-card-five.vercel.app';
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || 'https://onchain-crossword.vercel.app';
 
 const miniAppEmbed = {
   version: '1',
   imageUrl: `${APP_URL}/opengraph-image`,
   button: {
-    title: 'View My Aura',
+    title: 'Solve Today',
     action: {
       type: 'launch_miniapp',
-      name: 'Aura Card',
+      name: 'Onchain Crossword',
       url: APP_URL,
       splashImageUrl: `${APP_URL}/splash.png`,
-      splashBackgroundColor: '#080810',
+      splashBackgroundColor: '#ffffff',
     },
   },
 };
 
 export const metadata: Metadata = {
-  title: 'Aura Card',
-  description: 'Your living onchain identity on Base',
+  title: 'Onchain Crossword',
+  description: 'Daily crypto crossword puzzle on Base',
   metadataBase: new URL(APP_URL),
   openGraph: {
-    title: 'Aura Card',
-    description: 'Your living onchain identity on Base',
+    title: 'Onchain Crossword',
+    description: 'Daily crypto crossword puzzle on Base',
     type: 'website',
     images: ['/og-image.png'],
   },
   other: {
     'fc:miniapp': JSON.stringify(miniAppEmbed),
-    'base:app_id': '69ddd22f33eb726c42bba983',
   },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         <AppProvider>{children}</AppProvider>
       </body>

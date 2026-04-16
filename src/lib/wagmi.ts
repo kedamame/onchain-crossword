@@ -10,7 +10,7 @@ export const config = createConfig({
   connectors: [
     farcasterMiniApp(),
     injected({ shimDisconnect: true }),
-    coinbaseWallet({ appName: 'Aura Card', preference: 'all' }),
+    coinbaseWallet({ appName: 'Onchain Crossword', preference: 'all' }),
     ...(projectId ? [walletConnect({ projectId, showQrModal: true })] : []),
   ],
   transports: {

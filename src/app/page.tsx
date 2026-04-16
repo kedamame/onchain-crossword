@@ -1,24 +1,202 @@
 'use client';
 
-import { useState } from 'react';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useState, useCallback, useEffect } from 'react';
+import {
+  getDailyPuzzle,
+  buildAnswerGrid,
+  getClues,
+  getWordsAtCell,
+  WordDef,
+} from '@/lib/puzzles';
+import { CrosswordGrid } from '@/components/CrosswordGrid';
+import { CluePanel } from '@/components/CluePanel';
+import { CompletionStamp } from '@/components/CompletionStamp';
 import { useFarcasterMiniApp } from '@/lib/farcaster';
-import { AuraCard } from '@/components/AuraCard';
-import { EditProfile } from '@/components/EditProfile';
-import { ConnectWallet } from '@/components/ConnectWallet';
+
+const STORAGE_KEY = 'onchain-crossword';
+
+interface SavedState {
+  dayNumber: number;
+  userGrid: string[][];
+  isComplete: boolean;
+}
+
+interface StreakState {
+  streak: number;
+  lastCompletedDay: number;
+}
 
 export default function Home() {
-  const { isInMiniApp, isLoading, user } = useFarcasterMiniApp();
-  const { address, isConnected } = useAccount();
-  const { disconnect } = useDisconnect();
-  const [editing, setEditing] = useState(false);
+  const { puzzle, dayNumber } = getDailyPuzzle();
+  const answerGrid = buildAnswerGrid(puzzle);
+  const { across: acrossClues, down: downClues } = getClues(puzzle);
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://aura-card.vercel.app';
+  const { isInMiniApp } = useFarcasterMiniApp();
 
-  const handleShare = () => {
-    const shareUrl = `${appUrl}/card/${address}`;
-    const text = `Check out my Aura Card on Base! `;
-    const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(shareUrl)}`;
+  const [userGrid, setUserGrid] = useState<string[][]>(() =>
+    Array.from({ length: puzzle.rows }, () => Array(puzzle.cols).fill('')),
+  );
+  const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null);
+  const [selectedWord, setSelectedWord] = useState<WordDef | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
+  const [showStamp, setShowStamp] = useState(false);
+  const [streak, setStreak] = useState(1);
+
+  // Load saved state
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const saved: SavedState = JSON.parse(raw);
+        if (saved.dayNumber === dayNumber) {
+          setUserGrid(saved.userGrid);
+          setIsComplete(saved.isComplete);
+        }
+      }
+      const rawStreak = localStorage.getItem(`${STORAGE_KEY}-streak`);
+      if (rawStreak) {
+        const s: StreakState = JSON.parse(rawStreak);
+        setStreak(s.streak);
+      }
+    } catch {
+      // ignore
+    }
+  }, [dayNumber]);
+
+  // Save state when userGrid changes
+  useEffect(() => {
+    try {
+      const saved: SavedState = { dayNumber, userGrid, isComplete };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    } catch {
+      // ignore
+    }
+  }, [dayNumber, userGrid, isComplete]);
+
+  // Check completion
+  useEffect(() => {
+    if (isComplete) return;
+    const complete = answerGrid.every((row, r) =>
+      row.every((cell, c) => cell === null || userGrid[r]?.[c] === cell),
+    );
+    if (complete) {
+      setIsComplete(true);
+      setShowStamp(true);
+      try {
+        const rawStreak = localStorage.getItem(`${STORAGE_KEY}-streak`);
+        let newStreak = 1;
+        if (rawStreak) {
+          const s: StreakState = JSON.parse(rawStreak);
+          newStreak = s.lastCompletedDay === dayNumber - 1 ? s.streak + 1 : 1;
+        }
+        setStreak(newStreak);
+        const newState: StreakState = { streak: newStreak, lastCompletedDay: dayNumber };
+        localStorage.setItem(`${STORAGE_KEY}-streak`, JSON.stringify(newState));
+      } catch {
+        // ignore
+      }
+    }
+  }, [userGrid, answerGrid, isComplete, dayNumber]);
+
+  const selectCell = useCallback(
+    (row: number, col: number) => {
+      const wordsAtCell = getWordsAtCell(puzzle, row, col);
+      if (wordsAtCell.length === 0) return;
+
+      if (selectedCell?.row === row && selectedCell?.col === col && wordsAtCell.length > 1) {
+        const currentDir = selectedWord?.direction;
+        const other = wordsAtCell.find((w) => w.direction !== currentDir);
+        if (other) setSelectedWord(other);
+        return;
+      }
+
+      setSelectedCell({ row, col });
+      const preferred = wordsAtCell.find((w) => w.direction === selectedWord?.direction);
+      setSelectedWord(preferred ?? wordsAtCell[0]);
+    },
+    [puzzle, selectedCell, selectedWord],
+  );
+
+  const handleInput = useCallback(
+    (row: number, col: number, value: string) => {
+      if (isComplete) return;
+
+      if (value !== '') {
+        // Normal character: set cell and advance cursor
+        setUserGrid((prev) => {
+          const next = prev.map((r) => [...r]);
+          next[row][col] = value;
+          return next;
+        });
+        if (selectedWord) {
+          const { direction } = selectedWord;
+          const wordEnd =
+            direction === 'across'
+              ? selectedWord.col + selectedWord.word.length - 1
+              : selectedWord.row + selectedWord.word.length - 1;
+          const current = direction === 'across' ? col : row;
+          if (current < wordEnd) {
+            const nextRow = direction === 'across' ? row : row + 1;
+            const nextCol = direction === 'across' ? col + 1 : col;
+            setSelectedCell({ row: nextRow, col: nextCol });
+          }
+        }
+      } else {
+        // Backspace on empty cell: move cursor back (do NOT clear prev cell)
+        if (selectedWord) {
+          const { direction } = selectedWord;
+          const wordStart =
+            direction === 'across' ? selectedWord.col : selectedWord.row;
+          const current = direction === 'across' ? col : row;
+          if (current > wordStart) {
+            const prevRow = direction === 'across' ? row : row - 1;
+            const prevCol = direction === 'across' ? col - 1 : col;
+            setSelectedCell({ row: prevRow, col: prevCol });
+          }
+        }
+      }
+    },
+    [isComplete, selectedWord],
+  );
+
+  const handleDelete = useCallback(
+    (row: number, col: number, wasEmpty: boolean) => {
+      if (isComplete) return;
+      if (!wasEmpty) {
+        // Clear current cell only, stay in place
+        setUserGrid((prev) => {
+          const next = prev.map((r) => [...r]);
+          next[row][col] = '';
+          return next;
+        });
+      } else if (selectedWord) {
+        // Cell already empty: move cursor back
+        const { direction } = selectedWord;
+        const wordStart = direction === 'across' ? selectedWord.col : selectedWord.row;
+        const current = direction === 'across' ? col : row;
+        if (current > wordStart) {
+          const prevRow = direction === 'across' ? row : row - 1;
+          const prevCol = direction === 'across' ? col - 1 : col;
+          setSelectedCell({ row: prevRow, col: prevCol });
+        }
+      }
+    },
+    [isComplete, selectedWord],
+  );
+
+  const handleClueClick = useCallback(
+    (word: WordDef) => {
+      setSelectedWord(word);
+      setSelectedCell({ row: word.row, col: word.col });
+    },
+    [],
+  );
+
+  const handleShare = useCallback(() => {
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || 'https://onchain-crossword.vercel.app';
+    const text = `Onchain Crossword Day #${dayNumber} - ${puzzle.title}\nStreak: ${streak} days`;
+    const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text + '\n' + appUrl)}`;
     if (isInMiniApp) {
       import('@farcaster/miniapp-sdk').then(({ sdk }) => {
         sdk.actions.openUrl(composeUrl);
@@ -26,75 +204,192 @@ export default function Home() {
     } else {
       window.open(composeUrl, '_blank');
     }
-  };
-
-  if (isLoading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
-          <p className="text-white/40 text-sm">Loading Aura...</p>
-        </div>
-      </main>
-    );
-  }
+  }, [dayNumber, puzzle.title, streak, isInMiniApp]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-start px-4 pt-10 pb-20">
-      {/* Header */}
-      <div className="w-full max-w-sm mb-8 text-center">
-        <h1 className="text-white font-bold text-2xl tracking-tight">
-          <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-            Aura Card
-          </span>
-        </h1>
-        <p className="text-white/40 text-sm mt-1">Your living onchain identity</p>
-      </div>
+    <>
+      <main
+        style={{
+          minHeight: '100dvh',
+          background: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '0 0 80px',
+        }}
+      >
+        {/* Header */}
+        <header
+          style={{
+            width: '100%',
+            borderBottom: '2px solid #000',
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            maxWidth: '480px',
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: 'var(--font-space)',
+                fontSize: '22px',
+                fontWeight: 900,
+                color: '#000',
+                letterSpacing: '-0.03em',
+                lineHeight: 1,
+              }}
+            >
+              ONCHAIN
+            </div>
+            <div
+              style={{
+                fontFamily: 'var(--font-space)',
+                fontSize: '22px',
+                fontWeight: 900,
+                color: '#000',
+                letterSpacing: '-0.03em',
+                lineHeight: 1,
+              }}
+            >
+              CROSSWORD
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-space)',
+                fontSize: '10px',
+                fontWeight: 700,
+                letterSpacing: '0.15em',
+                color: '#999',
+              }}
+            >
+              #{dayNumber.toString().padStart(3, '0')} — {puzzle.title}
+            </div>
+            <div
+              style={{
+                fontFamily: 'var(--font-space)',
+                fontSize: '13px',
+                fontWeight: 700,
+                color: '#000',
+                marginTop: '2px',
+              }}
+            >
+              {isComplete ? `${streak} DAY STREAK` : 'SOLVE TODAY'}
+            </div>
+          </div>
+        </header>
 
-      {!isConnected ? (
-        <ConnectWallet isInMiniApp={isInMiniApp} />
-      ) : (
-        <>
-          <AuraCard
-            address={address!}
-            user={user}
-            onEdit={() => setEditing(true)}
+        {/* Grid */}
+        <div style={{ width: '100%', maxWidth: '480px', padding: '20px 20px 0' }}>
+          <CrosswordGrid
+            puzzle={puzzle}
+            userGrid={userGrid}
+            selectedCell={selectedCell}
+            selectedWord={selectedWord}
+            onCellClick={selectCell}
+            onInput={handleInput}
+            onDelete={handleDelete}
+            isComplete={isComplete}
           />
+        </div>
 
-          {/* Action buttons */}
-          <div className="flex gap-3 mt-6 w-full max-w-sm">
-            <button
-              onClick={handleShare}
-              className="flex-1 py-3 rounded-2xl font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/10 transition-all"
+        {/* Active clue strip */}
+        {selectedWord && !isComplete && (
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '480px',
+              padding: '12px 20px 0',
+            }}
+          >
+            <div
+              style={{
+                background: '#000',
+                color: '#fff',
+                padding: '10px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+              }}
             >
-              Share Card
-            </button>
+              <span
+                style={{
+                  fontFamily: 'var(--font-space)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '0.15em',
+                  color: '#888',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {selectedWord.number}{selectedWord.direction === 'across' ? 'A' : 'D'}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-space)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: '#fff',
+                }}
+              >
+                {selectedWord.clue}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Clue panel */}
+        <div style={{ width: '100%', maxWidth: '480px', padding: '20px 20px 0' }}>
+          <CluePanel
+            acrossClues={acrossClues}
+            downClues={downClues}
+            selectedWord={selectedWord}
+            onClueClick={handleClueClick}
+          />
+        </div>
+
+        {/* Complete banner (when stamp dismissed) */}
+        {isComplete && !showStamp && (
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '480px',
+              padding: '16px 20px 0',
+            }}
+          >
             <button
-              onClick={() => disconnect()}
-              className="py-3 px-5 rounded-2xl text-white/40 hover:text-white/70 bg-white/5 border border-white/10 transition-all"
+              onClick={() => setShowStamp(true)}
+              style={{
+                width: '100%',
+                background: '#00FF87',
+                color: '#000',
+                padding: '16px',
+                border: '2px solid #000',
+                fontFamily: 'var(--font-space)',
+                fontSize: '14px',
+                fontWeight: 900,
+                letterSpacing: '0.1em',
+                cursor: 'pointer',
+              }}
             >
-              Disconnect
+              VIEW STAMP
             </button>
           </div>
+        )}
+      </main>
 
-          {/* View others */}
-          <p className="text-white/30 text-xs mt-6 text-center">
-            Share your card URL to let others view your Aura
-          </p>
-          <p className="text-white/20 text-xs font-mono mt-1">
-            {appUrl}?addr={address?.slice(0, 10)}...
-          </p>
-        </>
-      )}
-
-      {/* Edit modal */}
-      {editing && address && (
-        <EditProfile
-          address={address}
-          onClose={() => setEditing(false)}
-          onSaved={() => setEditing(false)}
+      {showStamp && (
+        <CompletionStamp
+          streak={streak}
+          dayNumber={dayNumber}
+          puzzleTitle={puzzle.title}
+          onShare={handleShare}
+          onClose={() => setShowStamp(false)}
         />
       )}
-    </main>
+    </>
   );
 }
