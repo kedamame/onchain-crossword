@@ -2,34 +2,49 @@ import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
+const GRID = [
+  [1, 1, 1, 0, 1],
+  [1, 0, 1, 0, 1],
+  [1, 1, 1, 1, 1],
+  [1, 0, 1, 0, 1],
+  [1, 1, 1, 0, 1],
+];
+
+const SIZE = 200;
+const CELL = 28;
+const GAP = 2;
+
 export async function GET() {
   return new ImageResponse(
     (
       <div
         style={{
-          width: '100%',
-          height: '100%',
+          width: SIZE,
+          height: SIZE,
+          background: '#000',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#080810',
         }}
       >
-        <div
-          style={{
-            width: 120,
-            height: 120,
-            borderRadius: 60,
-            background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <div style={{ fontSize: 72, fontWeight: 800, color: 'white', display: 'flex' }}>A</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: `${GAP}px` }}>
+          {GRID.map((row, r) => (
+            <div key={r} style={{ display: 'flex', gap: `${GAP}px` }}>
+              {row.map((cell, c) => (
+                <div
+                  key={c}
+                  style={{
+                    width: CELL,
+                    height: CELL,
+                    background: cell ? '#fff' : '#111',
+                  }}
+                />
+              ))}
+            </div>
+          ))}
         </div>
       </div>
     ),
-    { width: 200, height: 200 }
+    { width: SIZE, height: SIZE },
   );
 }
