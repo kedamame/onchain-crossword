@@ -1,3 +1,5 @@
+import { WORD_BANK, WordEntry } from './wordlist';
+
 export interface WordDef {
   word: string;
   direction: 'across' | 'down';
@@ -15,415 +17,270 @@ export interface Puzzle {
   words: WordDef[];
 }
 
-// ─── Puzzle 0 ───────────────────────────────────────────────────────────────
-// Grid 8x10
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  .  .  .  W  A  L  L  E  T  .
-//  1:  .  .  .  .  .  N  F  T  .  .
-//  2:  .  .  .  .  .  .  .  H  .  .
-//  3:  .  .  .  .  B  A  S  E  .  .
-//  4:  .  .  .  .  .  .  .  R  .  .
-//  5:  .  .  .  .  .  .  D  E  F  I
-//  6:  .  .  .  .  .  .  A  U  .  .
-//  7:  .  .  .  .  .  .  O  M  .  .
-//
-// Intersections verified:
-//   WALLET(0,7)=E  == ETHEREUM(0,7)=E  ✓
-//   NFT(1,7)=T     == ETHEREUM(1,7)=T  ✓
-//   BASE(3,7)=E    == ETHEREUM(3,7)=E  ✓
-//   DEFI(5,7)=E    == ETHEREUM(5,7)=E  ✓
-//   DAO(5,6)=D     == DEFI(5,6)=D      ✓
+// ─── Constants ───────────────────────────────────────────────────────────────
 
-const puzzle0: Puzzle = {
-  id: 0,
-  title: 'BASICS',
-  rows: 8,
-  cols: 10,
-  words: [
-    { word: 'WALLET',   direction: 'across', row: 0, col: 3, number: 1, clue: 'Where you keep your crypto assets' },
-    { word: 'ETHEREUM', direction: 'down',   row: 0, col: 7, number: 2, clue: 'The second-largest blockchain' },
-    { word: 'NFT',      direction: 'across', row: 1, col: 5, number: 3, clue: 'Non-Fungible Token (abbr.)' },
-    { word: 'BASE',     direction: 'across', row: 3, col: 4, number: 4, clue: "Coinbase's L2 blockchain" },
-    { word: 'DEFI',     direction: 'across', row: 5, col: 6, number: 5, clue: 'Decentralized Finance (abbr.)' },
-    { word: 'DAO',      direction: 'down',   row: 5, col: 6, number: 5, clue: 'Community governance structure (abbr.)' },
-  ],
-};
+const GRID_SIZE = 14;
 
-// ─── Puzzle 1 ───────────────────────────────────────────────────────────────
-// Grid 6x10
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  .  G  .  C  .  .  .  .  .  .
-//  1:  .  A  .  H  .  .  .  .  .  .
-//  2:  .  S  W  A  P  .  D  .  .  .
-//  3:  .  B  R  I  D  G  E  .  .  .
-//  4:  .  .  .  N  .  .  F  .  .  .
-//  5:  .  .  .  .  .  .  I  .  .  .
-//
-// Intersections verified:
-//   GAS(2,1)=S    == SWAP(2,1)=S     ✓
-//   CHAIN(2,3)=A  == SWAP(2,3)=A     ✓
-//   CHAIN(3,3)=I  == BRIDGE(3,3)=I   ✓
-//   DEFI(3,6)=E   == BRIDGE(3,6)=E   ✓
-//   DEFI(2,6)=D   (DEFI starts row=2, col=6) ✓
-
-const puzzle1: Puzzle = {
-  id: 1,
-  title: 'INFRASTRUCTURE',
-  rows: 6,
-  cols: 10,
-  words: [
-    { word: 'GAS',    direction: 'down',   row: 0, col: 1, number: 1, clue: 'Fee paid for blockchain transactions' },
-    { word: 'CHAIN',  direction: 'down',   row: 0, col: 3, number: 2, clue: 'The backbone of blockchain' },
-    { word: 'SWAP',   direction: 'across', row: 2, col: 1, number: 3, clue: 'Exchange one token for another' },
-    { word: 'BRIDGE', direction: 'across', row: 3, col: 1, number: 4, clue: 'Move assets between networks' },
-    { word: 'DEFI',   direction: 'down',   row: 2, col: 6, number: 5, clue: 'Decentralized Finance (abbr.)' },
-  ],
-};
-
-// ─── Puzzle 2 ───────────────────────────────────────────────────────────────
-// Grid 6x9
-//      0  1  2  3  4  5  6  7  8
-//  0:  .  .  .  .  .  T  .  .  .
-//  1:  A  I  R  D  R  O  P  .  .
-//  2:  .  .  .  .  .  K  .  .  .
-//  3:  .  S  T  A  K  E  .  .  .
-//  4:  .  .  .  M  I  N  T  .  .
-//  5:  .  .  .  .  .  .  .  .  .
-//
-// Intersections verified:
-//   AIRDROP(1,5)=O == TOKEN(1,5)=O   ✓
-//   STAKE(3,5)=E   == TOKEN(3,5)=E   ✓
-//   MINT(4,5)=N    == TOKEN(4,5)=N   ✓
-//   MINT(4,6)=T    (last letter)
-//   POOL? skipped — 4 words enough for puzzle 2
-
-const puzzle2: Puzzle = {
-  id: 2,
-  title: 'TOKENOMICS',
-  rows: 6,
-  cols: 9,
-  words: [
-    { word: 'TOKEN',   direction: 'down',   row: 0, col: 5, number: 1, clue: 'Digital asset on a blockchain' },
-    { word: 'AIRDROP', direction: 'across', row: 1, col: 0, number: 2, clue: 'Free token distribution event' },
-    { word: 'STAKE',   direction: 'across', row: 3, col: 1, number: 3, clue: 'Lock tokens to earn rewards' },
-    { word: 'MINT',    direction: 'across', row: 4, col: 3, number: 4, clue: 'Create a new NFT or token' },
-  ],
-};
-
-// ─── Puzzle 3 ───────────────────────────────────────────────────────────────
-// Grid 7x10
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  .  .  .  .  .  .  .  .  .  .
-//  1:  .  .  .  .  L  .  .  .  .  .
-//  2:  .  .  .  .  A  .  .  .  .  .
-//  3:  .  O  N  C  H  A  I  N  .  .
-//  4:  .  .  .  .  E  .  .  F  .  .
-//  5:  .  .  .  .  R  .  .  T  .  .
-//  6:  .  .  G  A  S  .  .  .  .  .
-//
-// Intersections verified:
-//   LAYER(3,4)=H? No: LAYER=L-A-Y-E-R, ONCHAIN has H at col=4.
-//   Wait: ONCHAIN across row=3, col=1: O(1) N(2) C(3) H(4) A(5) I(6) N(7)
-//   LAYER down col=4: L(1) A(2) Y(3)? No, row=3 col=4 = H from ONCHAIN.
-//   LAYER would have Y at row=3 (index 2 from start row=1). Y != H.
-//
-// Let me redo puzzle 3:
-// Use POOL, GAS, ONCHAIN, NFT, LAYER
-//
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  P  O  O  L  .  .  .  .  .  .
-//  1:  .  N  .  .  .  .  .  .  .  .
-//  2:  .  C  .  .  .  .  .  .  .  .
-//  3:  .  H  .  .  .  .  .  .  .  .
-//  4:  .  A  .  .  .  .  .  .  .  .
-//  5:  .  I  .  G  A  S  .  .  .  .
-//  6:  .  N  .  .  .  .  .  .  .  .
-//
-// POOL across (row=0, col=0): P-O-O-L ✓
-// ONCHAIN down (row=0, col=1): O-N-C-H-A-I-N ✓ (O at row=0,col=1 = O from POOL ✓)
-// GAS across (row=5, col=3): G-A-S ✓
-// Not yet connected... GAS needs to cross ONCHAIN:
-// ONCHAIN col=1 at row=5 = I. GAS at row=5: G(3) A(4) S(5). col=1 not in GAS. Not intersecting.
-//
-// Let me adjust GAS to cross ONCHAIN:
-// ONCHAIN col=1 rows 0-6: O N C H A I N
-// GAS down from col=1: O is row=0... hmm.
-// GAS across at row=5, col=1: G? (5,1)=I from ONCHAIN. G!=I.
-//
-// NFT across (row=5, col=0): N(0) F(1) T(2). (5,1)=I from ONCHAIN. F!=I.
-// NFT across (row=6, col=0): N(0) F(1) T(2). (6,1)=N from ONCHAIN. F!=N.
-// NFT across (row=6, col=1): N(1) F(2) T(3). (6,1)=N from ONCHAIN. N=N ✓!
-//
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  P  O  O  L  .  .  .  .  .  .
-//  1:  .  N  .  .  .  .  .  .  .  .
-//  2:  .  C  .  .  .  .  .  .  .  .
-//  3:  .  H  .  .  .  .  .  .  .  .
-//  4:  .  A  .  .  .  .  .  .  .  .
-//  5:  .  I  .  .  .  .  .  .  .  .
-//  6:  .  N  F  T  .  .  .  .  .  .
-//
-// POOL across (row=0, col=0): P-O-O-L ✓
-// ONCHAIN down (row=0, col=1): O-N-C-H-A-I-N ✓ (O at 0,1 == POOL's O ✓)
-// NFT across (row=6, col=1): N-F-T ✓ (N at 6,1 == ONCHAIN's N ✓)
-//
-// Add GAS: need to connect to grid.
-// POOL: P(0,0) O(0,1) O(0,2) L(0,3)
-// GAS down from (0,0): G? (0,0)=P. No.
-// GAS down from (0,2): G? (0,2)=O from POOL. No.
-// GAS down from (0,3): G? (0,3)=L from POOL. No.
-//
-// Let me add YIELD down from (0,3):
-// YIELD: Y-I-E-L-D. (0,3)=L from POOL. Y!=L. No.
-//
-// Add LAYER across at row=0 starting from col=3:
-// LAYER: L(3) A(4) Y(5) E(6) R(7). (0,3)=L from POOL ✓!
-//
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  P  O  O  L  A  Y  E  R  .  .
-//  1:  .  N  .  .  .  .  .  .  .  .
-//  2:  .  C  .  .  .  .  .  .  .  .
-//  3:  .  H  .  .  .  .  .  .  .  .
-//  4:  .  A  .  .  .  .  .  .  .  .
-//  5:  .  I  .  .  .  .  .  .  .  .
-//  6:  .  N  F  T  .  .  .  .  .  .
-//
-// Wait: POOL is P-O-O-L (4 letters, col=0-3), and LAYER is L-A-Y-E-R.
-// They share L at col=3. But the combined word at row=0 would be: P O O L A Y E R
-// That's fine - POOL ends at col=3, LAYER starts at col=3. Same cell = L ✓
-//
-// POOL across (row=0, col=0): P(0) O(1) O(2) L(3)
-// LAYER across (row=0, col=3): L(3) A(4) Y(5) E(6) R(7)
-// Both share (0,3)=L. But they are TWO words at the same row with overlapping cell.
-// This is NOT valid crossword design (cells can only belong to one across-word OR one down-word direction pair).
-// Actually in a crossword, (0,3) would be the last letter of POOL and the first of LAYER - but that means (0,3) is part of TWO across words, which is invalid.
-//
-// Let me just go with 3 words for puzzle 3:
-
-const puzzle3: Puzzle = {
-  id: 3,
-  title: 'ON-CHAIN',
-  rows: 8,
-  cols: 10,
-  words: [
-    { word: 'POOL',    direction: 'across', row: 0, col: 0, number: 1, clue: 'Liquidity pool for trading' },
-    { word: 'ONCHAIN', direction: 'down',   row: 0, col: 1, number: 2, clue: 'Stored or executed on a blockchain' },
-    { word: 'NFT',     direction: 'across', row: 6, col: 1, number: 3, clue: 'Non-Fungible Token (abbr.)' },
-  ],
-};
-
-// ─── Puzzle 4 ───────────────────────────────────────────────────────────────
-// Grid 7x10
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  .  .  .  .  .  .  .  .  .  .
-//  1:  .  .  Y  I  E  L  D  .  .  .
-//  2:  .  .  .  .  .  .  E  .  .  .
-//  3:  .  .  .  .  .  .  G  .  .  .
-//  4:  .  .  .  .  .  .  E  .  .  .
-//  5:  V  A  U  L  T  .  N  .  .  .
-//  6:  .  .  .  .  .  .  .  .  .  .
-//
-// YIELD across (row=1, col=2): Y(2) I(3) E(4) L(5) D(6)
-// DEGEN down  (row=1, col=6): D(1) E(2) G(3) E(4) N(5)
-// Intersection: YIELD(1,6)=D and DEGEN(1,6)=D ✓
-// VAULT across (row=5, col=0): V(0) A(1) U(2) L(3) T(4)
-// DEGEN(5,6)=N - VAULT ends at col=4. Not intersecting. Need to connect VAULT.
-//
-// GEN down (row=3,col=6): hmm, DEGEN already at col=6.
-// Let me add a word crossing VAULT:
-// VAULT across (row=5, col=0): V A U L T
-// DAO down (row=4,col=1): D(4) A(5) O(6). (5,1)=A from VAULT ✓!
-//
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  .  .  .  .  .  .  .  .  .  .
-//  1:  .  .  Y  I  E  L  D  .  .  .
-//  2:  .  .  .  .  .  .  E  .  .  .
-//  3:  .  .  .  .  .  .  G  .  .  .
-//  4:  .  D  .  .  .  .  E  .  .  .
-//  5:  V  A  U  L  T  .  N  .  .  .
-//  6:  .  O  .  .  .  .  .  .  .  .
-//
-// DAO down (row=4, col=1): D(4) A(5) O(6)
-// VAULT across (row=5, col=0): V(0) A(1) U(2) L(3) T(4)
-// Intersection: DAO(5,1)=A and VAULT(5,1)=A ✓
-// YIELD across (row=1, col=2): Y-I-E-L-D ✓
-// DEGEN down (row=1, col=6): D-E-G-E-N ✓ (D at row=1,col=6 == YIELD's D ✓)
-// DAO connected via VAULT. DEGEN connected via YIELD. All connected ✓
-
-const puzzle4: Puzzle = {
-  id: 4,
-  title: 'CULTURE',
-  rows: 7,
-  cols: 10,
-  words: [
-    { word: 'YIELD', direction: 'across', row: 1, col: 2, number: 1, clue: 'Return earned from staking or lending' },
-    { word: 'DEGEN', direction: 'down',   row: 1, col: 6, number: 2, clue: 'High-risk crypto trader (slang)' },
-    { word: 'DAO',   direction: 'down',   row: 4, col: 1, number: 3, clue: 'Decentralized Autonomous Organization' },
-    { word: 'VAULT', direction: 'across', row: 5, col: 0, number: 4, clue: 'Smart contract that holds funds securely' },
-  ],
-};
-
-// ─── Puzzle 5 ───────────────────────────────────────────────────────────────
-// Grid 7x10
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  .  .  .  .  .  .  .  .  .  .
-//  1:  .  .  .  .  .  .  .  .  .  .
-//  2:  .  .  .  .  H  O  D  L  .  .
-//  3:  .  .  .  .  .  .  E  .  .  .
-//  4:  .  .  .  .  .  .  F  .  .  .
-//  5:  .  M  E  M  E  .  I  .  .  .
-//  6:  .  .  .  .  .  .  .  .  .  .
-//
-// HODL across (row=2, col=4): H(4) O(5) D(6) L(7)
-// DEFI down  (row=2, col=6): D(2) E(3) F(4) I(5)
-// Intersection: HODL(2,6)=D and DEFI(2,6)=D ✓
-// MEME across (row=5, col=1): M(1) E(2) M(3) E(4)
-// DEFI(5,6)=I - MEME ends at col=4. Not connected.
-// Need to connect MEME to rest.
-// Add GAS down from (2,4): G? (2,4)=H. No.
-// Add word that crosses both MEME and DEFI:
-// DEFI col=6, rows 2-5. MEME row=5, cols 1-4.
-// These don't intersect. Let me add a word down at col=4 crossing MEME:
-// MEME(5,4)=E. Down word starting earlier at col=4:
-// HODL at (2,4)=H. So col=4: H(2) ?(3) ?(4) E(5)?
-// Word down at col=4, rows 2-5: H _ _ E -> HOLE? H-O-L-E ✓!
-// HOLE down (row=2, col=4): H(2) O(3) L(4) E(5)
-// HODL(2,4)=H and HOLE(2,4)=H ✓
-// MEME(5,4)=E and HOLE(5,4)=E ✓
-//
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  .  .  .  .  .  .  .  .  .  .
-//  1:  .  .  .  .  .  .  .  .  .  .
-//  2:  .  .  .  .  H  O  D  L  .  .
-//  3:  .  .  .  .  O  .  E  .  .  .
-//  4:  .  .  .  .  L  .  F  .  .  .
-//  5:  .  M  E  M  E  .  I  .  .  .
-//  6:  .  .  .  .  .  .  .  .  .  .
-//
-// HODL across (row=2, col=4): H(4) O(5) D(6) L(7)
-// DEFI down  (row=2, col=6): D(2) E(3) F(4) I(5) - D at (2,6)==HODL's D ✓
-// HOLE down  (row=2, col=4): H(2) O(3) L(4) E(5) - H at (2,4)==HODL's H ✓
-// MEME across(row=5, col=1): M(1) E(2) M(3) E(4) - E at (5,4)==HOLE's E ✓
-// All connected ✓
-
-const puzzle5: Puzzle = {
-  id: 5,
-  title: 'CRYPTO SLANG',
-  rows: 7,
-  cols: 10,
-  words: [
-    { word: 'HODL', direction: 'across', row: 2, col: 4, number: 1, clue: 'Hold crypto no matter what (crypto slang)' },
-    { word: 'DEFI', direction: 'down',   row: 2, col: 6, number: 2, clue: 'Decentralized Finance (abbr.)' },
-    { word: 'HOLE', direction: 'down',   row: 2, col: 4, number: 1, clue: 'A deep position in a losing trade (slang)' },
-    { word: 'MEME', direction: 'across', row: 5, col: 1, number: 3, clue: 'Viral token driven by internet culture' },
-  ],
-};
-
-// ─── Puzzle 6 ───────────────────────────────────────────────────────────────
-// Grid 7x10
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  .  .  .  .  .  .  .  .  .  .
-//  1:  .  .  .  .  .  .  .  .  .  .
-//  2:  .  .  S  T  A  K  E  .  .  .
-//  3:  .  .  .  .  .  .  A  .  .  .
-//  4:  .  .  .  .  .  .  R  .  .  .
-//  5:  .  .  .  .  G  A  S  .  .  .
-//  6:  .  .  .  .  .  .  .  .  .  .
-//
-// STAKE across (row=2, col=2): S(2) T(3) A(4) K(5) E(6)
-// EARNS? EARN? GAS?
-// GAS down (row=2,col=6)... no, STAKE's E is at col=6.
-// EARN down (row=2, col=6): E(2) A(3) R(4) N(5). But (5,6)=? GAS(5,4-6).
-// GAS across (row=5, col=4): G(4) A(5) S(6). (5,6)=S. EARN at (5,6)=N. S!=N.
-//
-// Let me use GAS across (row=5, col=4): G-A-S
-// Need a down word at col=6 going from STAKE(2,6)=E down to GAS(5,6)=S:
-// E _ _ S -> ETHS? EGGS? Let me try ERAS: E-R-A-S ✓ (4 letters, rows 2-5)
-// ERAS down (row=2, col=6): E(2) R(3) A(4) S(5)
-// STAKE(2,6)=E and ERAS(2,6)=E ✓
-// GAS(5,6)=S and ERAS(5,6)=S ✓
-// But "ERAS" is not a crypto term... Let me use something better.
-//
-// How about: E_RS -> not helpful.
-// Let's just go with EARN down (row=2,col=6): E-A-R-N. Then GAS starts at col=3:
-// GAS across (row=5, col=3): G(3) A(4) S(5). (5,6)=N from EARN(5,6)=N. GAS ends at col=5, not touching col=6.
-// EARN(5,6)=N alone in row 5. Not connected to GAS.
-// Add NFT down at col=5: N? STAKE(2,5)=K. N!=K. No.
-//
-// Simplify: just STAKE and EARN, then add a word crossing both:
-// STAKE across (row=2, col=2): S T A K E (col 2-6)
-// EARN down (row=2, col=6): E A R N (row 2-5)
-// STAKE(2,6)=E == EARN(2,6)=E ✓
-//
-// Add BURN across (row=5, col=0): B(0) U(1) R(2) N(3)
-// EARN(5,6)=N and BURN(5,3)=N. Col=6 != col=3. Not intersecting.
-//
-// Add BURN across (row=4, col=3): B(3) U(4) R(5) N(6)
-// EARN(4,6)=R and BURN(4,6)=N. R!=N. No.
-//
-// Add BURN across (row=3, col=3): B(3) U(4) R(5) N(6)
-// EARN(3,6)=A and BURN(3,6)=N. A!=N. No.
-//
-// Let me try a completely different word for the down:
-// STAKE across (row=2, col=2): S(2) T(3) A(4) K(5) E(6)
-// EARN doesn't work well. Let me use EDGE down at col=2:
-// EDGE down (row=2, col=2): E(2) D(3) G(4) E(5). (2,2)=S from STAKE. E!=S. No.
-//
-// GAS down at col=4: G(?)...
-// STAKE's A is at (2,4). GAS down (row=2, col=4): G? G!=A. No.
-//
-// APES down at col=6: A(?) STAKE's E is at (2,6).
-// APES: A-P-E-S. (2,6)=E, not A. No.
-//
-// Hmm. Let me just use EARN and connect via a different word:
-// STAKE across (row=3, col=2): S(2) T(3) A(4) K(5) E(6)
-// EARN down (row=3, col=6): E(3) A(4) R(5) N(6)
-// STAKE(3,6)=E == EARN(3,6)=E ✓
-// Now add GAS crossing EARN:
-// GAS across (row=5, col=4): G(4) A(5) S(6). EARN(5,6)=R. S!=R. No.
-// GAS across (row=6, col=4): G(4) A(5) S(6). EARN(6,6)=N. S!=N. No.
-//
-// Let me just go with 2 words + a completely disconnected 3rd that connects through a common letter I can find.
-// Actually, EARN has A at (4,6). Let me add a word crossing at (4,6)=A:
-// AURA across (row=4, col=3): A(3) U(4) R(5) A(6). (4,6)=A from EARN ✓! (A==A ✓)
-//
-//      0  1  2  3  4  5  6  7  8  9
-//  0:  .  .  .  .  .  .  .  .  .  .
-//  1:  .  .  .  .  .  .  .  .  .  .
-//  2:  .  .  .  .  .  .  .  .  .  .
-//  3:  .  .  S  T  A  K  E  .  .  .
-//  4:  .  .  .  A  U  R  A  .  .  .
-//  5:  .  .  .  .  .  .  R  .  .  .
-//  6:  .  .  .  .  .  .  N  .  .  .
-//
-// STAKE across (row=3, col=2): S T A K E
-// AURA  across (row=4, col=3): A U R A
-// EARN  down   (row=3, col=6): E A R N
-// STAKE(3,6)=E == EARN(3,6)=E ✓
-// AURA(4,6)=A  == EARN(4,6)=A ✓
-// All connected ✓
-
-const puzzle6: Puzzle = {
-  id: 6,
-  title: 'WEB3 LIFE',
-  rows: 7,
-  cols: 10,
-  words: [
-    { word: 'STAKE', direction: 'across', row: 3, col: 2, number: 1, clue: 'Lock tokens to earn rewards' },
-    { word: 'EARN',  direction: 'down',   row: 3, col: 6, number: 2, clue: 'Generate yield from crypto assets' },
-    { word: 'AURA',  direction: 'across', row: 4, col: 3, number: 3, clue: 'Onchain identity energy (Base app)' },
-  ],
-};
-
-export const PUZZLES: Puzzle[] = [
-  puzzle0,
-  puzzle1,
-  puzzle2,
-  puzzle3,
-  puzzle4,
-  puzzle5,
-  puzzle6,
+const PUZZLE_TITLES = [
+  'BASICS',
+  'DEFI',
+  'LAYER 2',
+  'CULTURE',
+  'SECURITY',
+  'TOKENOMICS',
+  'GOVERNANCE',
+  'INFRASTRUCTURE',
+  'ONCHAIN',
+  'WEB3 LIFE',
+  'STAKING',
+  'TRADING',
+  'WALLETS',
+  'BRIDGES',
+  'PROTOCOLS',
 ];
+
+// ─── Seeded RNG (mulberry32) ──────────────────────────────────────────────────
+
+function mulberry32(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s += 0x6d2b79f5;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 0x100000000;
+  };
+}
+
+function shuffle<T>(arr: T[], rng: () => number): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ─── Grid helpers ─────────────────────────────────────────────────────────────
+
+type Grid = (string | null)[][];
+
+function makeGrid(): Grid {
+  return Array.from({ length: GRID_SIZE }, () => Array<string | null>(GRID_SIZE).fill(null));
+}
+
+/**
+ * Check if `word` can be placed at (row, col) in direction `dir`.
+ * Returns { ok, crossCount } where crossCount is the number of cells
+ * that match an existing letter (i.e. crossing an already-placed word).
+ * crossCount must be ≥1 for the placement to be valid (connectivity).
+ */
+function canPlace(
+  grid: Grid,
+  word: string,
+  dir: 'across' | 'down',
+  row: number,
+  col: number,
+): { ok: boolean; crossCount: number } {
+  const len = word.length;
+
+  // Bounds
+  if (dir === 'across') {
+    if (row < 0 || row >= GRID_SIZE || col < 0 || col + len > GRID_SIZE)
+      return { ok: false, crossCount: 0 };
+    // Cell immediately before/after must be empty (no merging with adjacent word)
+    if (col > 0 && grid[row][col - 1] !== null) return { ok: false, crossCount: 0 };
+    if (col + len < GRID_SIZE && grid[row][col + len] !== null) return { ok: false, crossCount: 0 };
+  } else {
+    if (col < 0 || col >= GRID_SIZE || row < 0 || row + len > GRID_SIZE)
+      return { ok: false, crossCount: 0 };
+    if (row > 0 && grid[row - 1][col] !== null) return { ok: false, crossCount: 0 };
+    if (row + len < GRID_SIZE && grid[row + len][col] !== null) return { ok: false, crossCount: 0 };
+  }
+
+  let crossCount = 0;
+
+  for (let i = 0; i < len; i++) {
+    const r = dir === 'across' ? row : row + i;
+    const c = dir === 'across' ? col + i : col;
+    const existing = grid[r][c];
+
+    if (existing !== null) {
+      // Cell occupied — letter must match (this is a crossing)
+      if (existing !== word[i]) return { ok: false, crossCount: 0 };
+      crossCount++;
+    } else {
+      // Cell empty — perpendicular neighbors must be empty (prevent parallel words)
+      if (dir === 'across') {
+        if (r > 0 && grid[r - 1][c] !== null) return { ok: false, crossCount: 0 };
+        if (r < GRID_SIZE - 1 && grid[r + 1][c] !== null) return { ok: false, crossCount: 0 };
+      } else {
+        if (c > 0 && grid[r][c - 1] !== null) return { ok: false, crossCount: 0 };
+        if (c < GRID_SIZE - 1 && grid[r][c + 1] !== null) return { ok: false, crossCount: 0 };
+      }
+    }
+  }
+
+  return { ok: true, crossCount };
+}
+
+function placeWord(
+  grid: Grid,
+  word: string,
+  dir: 'across' | 'down',
+  row: number,
+  col: number,
+): void {
+  for (let i = 0; i < word.length; i++) {
+    const r = dir === 'across' ? row : row + i;
+    const c = dir === 'across' ? col + i : col;
+    grid[r][c] = word[i];
+  }
+}
+
+// ─── Generator ───────────────────────────────────────────────────────────────
+
+interface PlacedEntry {
+  entry: WordEntry;
+  dir: 'across' | 'down';
+  row: number;
+  col: number;
+}
+
+/**
+ * Attempt to generate a crossword for the given day + seed offset.
+ * Returns null if fewer than `minWords` could be placed.
+ */
+function tryGenerate(
+  dayNumber: number,
+  seedOffset: number,
+  minWords = 4,
+): PlacedEntry[] | null {
+  const rng = mulberry32((dayNumber + 1) * 31337 + seedOffset);
+  const entries = shuffle([...WORD_BANK], rng);
+  const grid = makeGrid();
+  const placed: PlacedEntry[] = [];
+
+  // Place first word horizontally in center of grid
+  const first = entries[0];
+  const firstRow = Math.floor(GRID_SIZE / 2);
+  const firstCol = Math.floor((GRID_SIZE - first.word.length) / 2);
+  placeWord(grid, first.word, 'across', firstRow, firstCol);
+  placed.push({ entry: first, dir: 'across', row: firstRow, col: firstCol });
+
+  // Greedily place up to 8 additional words
+  for (let wi = 1; wi < entries.length && placed.length < 9; wi++) {
+    const entry = entries[wi];
+
+    // Find all valid crossing placements against every already-placed word
+    const candidates: Array<{
+      dir: 'across' | 'down';
+      row: number;
+      col: number;
+      crossCount: number;
+    }> = [];
+
+    for (const p of placed) {
+      const perpDir: 'across' | 'down' = p.dir === 'across' ? 'down' : 'across';
+
+      for (let pi = 0; pi < p.entry.word.length; pi++) {
+        const pLetter = p.entry.word[pi];
+        const pRow = p.dir === 'across' ? p.row : p.row + pi;
+        const pCol = p.dir === 'across' ? p.col + pi : p.col;
+
+        for (let ni = 0; ni < entry.word.length; ni++) {
+          if (entry.word[ni] !== pLetter) continue;
+
+          // Align new word so that letter [ni] sits at (pRow, pCol)
+          const nRow = perpDir === 'across' ? pRow : pRow - ni;
+          const nCol = perpDir === 'across' ? pCol - ni : pCol;
+
+          const result = canPlace(grid, entry.word, perpDir, nRow, nCol);
+          if (result.ok && result.crossCount > 0) {
+            // Dedup: same (dir, row, col) can be reached via multiple shared letters
+            const key = `${perpDir}-${nRow}-${nCol}`;
+            if (!candidates.some((c) => `${c.dir}-${c.row}-${c.col}` === key)) {
+              candidates.push({ dir: perpDir, row: nRow, col: nCol, crossCount: result.crossCount });
+            }
+          }
+        }
+      }
+    }
+
+    if (candidates.length === 0) continue;
+
+    // Prefer higher crossCount; break ties randomly
+    const maxCross = Math.max(...candidates.map((c) => c.crossCount));
+    const top = candidates.filter((c) => c.crossCount === maxCross);
+    const chosen = top[Math.floor(rng() * top.length)];
+
+    placeWord(grid, entry.word, chosen.dir, chosen.row, chosen.col);
+    placed.push({ entry, dir: chosen.dir, row: chosen.row, col: chosen.col });
+  }
+
+  return placed.length >= minWords ? placed : null;
+}
+
+/** Trim to bounding box, assign cell numbers in reading order, build Puzzle. */
+function buildPuzzle(placed: PlacedEntry[], dayNumber: number): Puzzle {
+  // Bounding box
+  let minRow = GRID_SIZE,
+    maxRow = 0,
+    minCol = GRID_SIZE,
+    maxCol = 0;
+
+  for (const p of placed) {
+    const endRow = p.dir === 'across' ? p.row : p.row + p.entry.word.length - 1;
+    const endCol = p.dir === 'across' ? p.col + p.entry.word.length - 1 : p.col;
+    minRow = Math.min(minRow, p.row);
+    maxRow = Math.max(maxRow, endRow);
+    minCol = Math.min(minCol, p.col);
+    maxCol = Math.max(maxCol, endCol);
+  }
+
+  const rows = maxRow - minRow + 1;
+  const cols = maxCol - minCol + 1;
+
+  // Collect unique start cells and assign numbers in reading order
+  const startMap = new Map<string, { row: number; col: number }>();
+  for (const p of placed) {
+    const r = p.row - minRow;
+    const c = p.col - minCol;
+    const key = `${r}-${c}`;
+    if (!startMap.has(key)) startMap.set(key, { row: r, col: c });
+  }
+
+  const sorted = Array.from(startMap.values()).sort((a, b) =>
+    a.row !== b.row ? a.row - b.row : a.col - b.col,
+  );
+
+  const numberMap = new Map<string, number>();
+  sorted.forEach((sc, idx) => {
+    numberMap.set(`${sc.row}-${sc.col}`, idx + 1);
+  });
+
+  // Build WordDef array
+  const words: WordDef[] = placed.map((p) => {
+    const r = p.row - minRow;
+    const c = p.col - minCol;
+    return {
+      word: p.entry.word,
+      direction: p.dir,
+      row: r,
+      col: c,
+      clue: p.entry.clue,
+      // numberMap always has an entry for every placed word's start cell
+      number: numberMap.get(`${r}-${c}`) ?? 1,
+    };
+  });
+
+  const title =
+    PUZZLE_TITLES[((dayNumber % PUZZLE_TITLES.length) + PUZZLE_TITLES.length) % PUZZLE_TITLES.length];
+
+  return { id: dayNumber, title, rows, cols, words };
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 export function getDailyPuzzle(): { puzzle: Puzzle; dayNumber: number } {
   const now = new Date();
@@ -432,9 +289,32 @@ export function getDailyPuzzle(): { puzzle: Puzzle; dayNumber: number } {
       Date.UTC(2026, 0, 1)) /
       (1000 * 60 * 60 * 24),
   );
-  const puzzle = PUZZLES[((dayNumber % PUZZLES.length) + PUZZLES.length) % PUZZLES.length];
-  return { puzzle, dayNumber };
+
+  let placed: PlacedEntry[] | null = null;
+
+  // Try to get ≥4 words (20 attempts)
+  for (let attempt = 0; attempt < 20 && placed === null; attempt++) {
+    placed = tryGenerate(dayNumber, attempt * 100);
+  }
+  // Relax to ≥3 words
+  for (let attempt = 0; placed === null && attempt < 20; attempt++) {
+    placed = tryGenerate(dayNumber, attempt * 100 + 2000, 3);
+  }
+  // Relax to ≥2 words (practically always succeeds)
+  for (let attempt = 0; placed === null && attempt < 20; attempt++) {
+    placed = tryGenerate(dayNumber, attempt * 100 + 4000, 2);
+  }
+  // Absolute fallback: single word guaranteed
+  if (placed === null) {
+    const first = WORD_BANK[0];
+    const col = Math.floor((GRID_SIZE - first.word.length) / 2);
+    placed = [{ entry: first, dir: 'across', row: Math.floor(GRID_SIZE / 2), col }];
+  }
+
+  return { puzzle: buildPuzzle(placed, dayNumber), dayNumber };
 }
+
+// ─── Grid utilities (used by components) ─────────────────────────────────────
 
 /** Build the answer grid (null = black cell) */
 export function buildAnswerGrid(puzzle: Puzzle): (string | null)[][] {
@@ -451,7 +331,7 @@ export function buildAnswerGrid(puzzle: Puzzle): (string | null)[][] {
   return grid;
 }
 
-/** Map "row-col" -> cell number (for labeling) */
+/** Map "row-col" -> cell number (for labeling grid cells) */
 export function buildNumberMap(puzzle: Puzzle): Map<string, number> {
   const map = new Map<string, number>();
   for (const w of puzzle.words) {
@@ -461,7 +341,7 @@ export function buildNumberMap(puzzle: Puzzle): Map<string, number> {
   return map;
 }
 
-/** Get across and down clue lists (deduplicated) */
+/** Get across and down clue lists, sorted by number */
 export function getClues(puzzle: Puzzle) {
   const across: WordDef[] = [];
   const down: WordDef[] = [];
@@ -481,12 +361,8 @@ export function getClues(puzzle: Puzzle) {
   return { across, down };
 }
 
-/** Given a cell, find which words cover it */
-export function getWordsAtCell(
-  puzzle: Puzzle,
-  row: number,
-  col: number,
-): WordDef[] {
+/** Given a cell position, return all words that cover it */
+export function getWordsAtCell(puzzle: Puzzle, row: number, col: number): WordDef[] {
   return puzzle.words.filter((w) => {
     if (w.direction === 'across') {
       return w.row === row && col >= w.col && col < w.col + w.word.length;
