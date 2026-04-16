@@ -15,10 +15,21 @@ contract CrosswordStreak {
     /// @notice Day number (0-indexed from DAY_ORIGIN) of the last recorded completion
     mapping(address => uint256) public lastDay;
 
+    event Started(address indexed player, uint256 day);
     event Recorded(address indexed player, uint256 day, uint256 newStreak);
 
     error AlreadyRecordedToday();
     error TooEarly();
+
+    /// @notice Record that the player started today's puzzle. Emits Started event.
+    ///         Duplicate calls on the same day are intentionally allowed — the event log
+    ///         is used only for builder attribution counting, not for state updates.
+    ///         Extra calldata bytes (e.g. builder attribution suffix) are ignored by the EVM.
+    function start() external {
+        if (block.timestamp < DAY_ORIGIN) revert TooEarly();
+        uint256 today = (block.timestamp - DAY_ORIGIN) / 1 days;
+        emit Started(msg.sender, today);
+    }
 
     /// @notice Record today's puzzle completion.
     ///         - Consecutive day from last record → extends streak

@@ -6,6 +6,13 @@ export const CROSSWORD_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as
 export const CROSSWORD_ABI = [
   {
     type: 'function',
+    name: 'start',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     name: 'record',
     inputs: [],
     outputs: [],
@@ -20,6 +27,14 @@ export const CROSSWORD_ABI = [
       { name: 'lastCompletedDay', type: 'uint256' },
     ],
     stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    name: 'Started',
+    inputs: [
+      { name: 'player', type: 'address', indexed: true },
+      { name: 'day', type: 'uint256', indexed: false },
+    ],
   },
   {
     type: 'event',
