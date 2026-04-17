@@ -93,8 +93,8 @@ export async function GET(req: NextRequest) {
           {/* Crossword grid — filled cells in tier color to show completion */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             {/* CLEARED badge above grid */}
-            <div style={{ display: 'flex', background: tier.color, paddingTop: 4, paddingBottom: 4, paddingLeft: 14, paddingRight: 14 }}>
-              <div style={{ display: 'flex', fontSize: 11, fontWeight: 700, color: '#fff', letterSpacing: '0.2em' }}>
+            <div style={{ display: 'flex', background: tier.color, paddingTop: 8, paddingBottom: 8, paddingLeft: 24, paddingRight: 24 }}>
+              <div style={{ display: 'flex', fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: '0.2em' }}>
                 CLEARED
               </div>
             </div>
