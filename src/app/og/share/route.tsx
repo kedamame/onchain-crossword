@@ -90,23 +90,30 @@ export async function GET(req: NextRequest) {
             </div>
           </div>
 
-          {/* Crossword grid — blank cells showing today's puzzle shape */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, borderWidth: 2, borderStyle: 'solid', borderColor: '#000', padding: 6 }}>
-            {grid.slice(0, rows).map((row, ri) => (
-              <div key={ri} style={{ display: 'flex', gap: GAP }}>
-                {row.slice(0, cols).map((cell, ci) => (
-                  <div
-                    key={ci}
-                    style={{
-                      width: CELL,
-                      height: CELL,
-                      background: cell !== null ? '#fff' : '#000',
-                      border: cell !== null ? '1px solid #ccc' : 'none',
-                    }}
-                  />
-                ))}
+          {/* Crossword grid — filled cells in tier color to show completion */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            {/* CLEARED badge above grid */}
+            <div style={{ display: 'flex', background: tier.color, paddingTop: 4, paddingBottom: 4, paddingLeft: 14, paddingRight: 14 }}>
+              <div style={{ display: 'flex', fontSize: 11, fontWeight: 700, color: '#fff', letterSpacing: '0.2em' }}>
+                CLEARED
               </div>
-            ))}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, borderWidth: 2, borderStyle: 'solid', borderColor: tier.color, padding: 6 }}>
+              {grid.slice(0, rows).map((row, ri) => (
+                <div key={ri} style={{ display: 'flex', gap: GAP }}>
+                  {row.slice(0, cols).map((cell, ci) => (
+                    <div
+                      key={ci}
+                      style={{
+                        width: CELL,
+                        height: CELL,
+                        background: cell !== null ? tier.color : '#111',
+                      }}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
