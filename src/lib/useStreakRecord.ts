@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   useAccount,
   useSendTransaction,
@@ -13,12 +13,16 @@ import { CROSSWORD_ABI, CROSSWORD_ADDRESS } from './crosswordContract';
 export type TxStatus = 'idle' | 'pending' | 'success' | 'error';
 
 export interface StreakRecordState {
-  /** true when the contract address is set AND a wallet is connected */
+  /** true when a wallet is connected (button visible) */
   canRecord: boolean;
+  /** true when both contract is deployed AND wallet is connected (button clickable) */
+  contractReady: boolean;
   /** true when the player already recorded today on-chain */
   alreadyRecorded: boolean;
   txStatus: TxStatus;
   txHash: `0x${string}` | undefined;
+  /** on-chain streak after TX success or if already recorded today; null otherwise */
+  onChainStreak: number | null;
   onRecord: () => void;
 }
 
@@ -30,7 +34,7 @@ export function useStreakRecord(dayNumber: number): StreakRecordState {
   const { address } = useAccount();
 
   // Read current streak / last recorded day from the contract
-  const { data: streakInfo } = useReadContract({
+  const { data: streakInfo, refetch: refetchStreak } = useReadContract({
     address: CROSSWORD_ADDRESS,
     abi: CROSSWORD_ABI,
     functionName: 'getStreak',
@@ -46,8 +50,11 @@ export function useStreakRecord(dayNumber: number): StreakRecordState {
     reset,
   } = useSendTransaction();
 
-  const { isSuccess: isTxSuccess, isLoading: isTxLoading } =
+  const { isSuccess: isTxSuccess, isLoading: isTxLoading, isError: isTxReceiptError } =
     useWaitForTransactionReceipt({ hash: txHash, query: { enabled: !!txHash } });
+
+  // Track refetch-in-progress so we don't expose stale streakInfo as onChainStreak
+  const [isRefetching, setIsRefetching] = useState(false);
 
   // Already recorded if on-chain lastDay matches today's dayNumber (and streak > 0)
   const alreadyRecordedOnChain =
@@ -61,15 +68,26 @@ export function useStreakRecord(dayNumber: number): StreakRecordState {
     ? 'success'
     : isTxLoading || isWritePending
       ? 'pending'
-      : writeError
+      : writeError || isTxReceiptError
         ? 'error'
         : 'idle';
 
+  useEffect(() => {
+    if (!isTxSuccess) return;
+    setIsRefetching(true);
+    refetchStreak().finally(() => setIsRefetching(false));
+  }, [isTxSuccess, refetchStreak]);
+
+  // Only expose on-chain streak after refetch completes (avoids showing stale pre-TX value)
+  const onChainStreak =
+    !isRefetching && streakInfo && (isTxSuccess || alreadyRecordedOnChain)
+      ? Number(streakInfo[0])
+      : null;
+
   const onRecord = useCallback(() => {
     if (!CROSSWORD_ADDRESS || !address) return;
-    reset(); // clear any stale error so RETRY transitions correctly to pending
+    reset();
 
-    // Encode record() calldata and append builder code for Base attribution
     const calldata = encodeFunctionData({
       abi: CROSSWORD_ABI,
       functionName: 'record',
@@ -82,10 +100,12 @@ export function useStreakRecord(dayNumber: number): StreakRecordState {
   }, [sendTransaction, reset, address]);
 
   return {
-    canRecord: !!CROSSWORD_ADDRESS && !!address,
+    canRecord: !!address,
+    contractReady: !!CROSSWORD_ADDRESS && !!address,
     alreadyRecorded,
     txStatus,
     txHash,
+    onChainStreak,
     onRecord,
   };
 }

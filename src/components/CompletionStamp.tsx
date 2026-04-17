@@ -10,6 +10,7 @@ interface Props {
   onClose: () => void;
   // On-chain recording
   canRecord: boolean;
+  contractReady: boolean;
   alreadyRecorded: boolean;
   txStatus: TxStatus;
   txHash: `0x${string}` | undefined;
@@ -43,6 +44,7 @@ export function CompletionStamp({
   onShare,
   onClose,
   canRecord,
+  contractReady,
   alreadyRecorded,
   txStatus,
   txHash,
@@ -156,9 +158,13 @@ export function CompletionStamp({
         {/* Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
 
-          {/* On-chain record button — only when contract is deployed + wallet connected */}
+          {/* On-chain record button — visible when wallet connected */}
           {canRecord && (
-            txStatus === 'success' ? (
+            !contractReady ? (
+              <button disabled style={{ ...BTN, background: '#f0f0f0', color: '#999', border: '1px solid #e0e0e0', cursor: 'default' }}>
+                RECORD STREAK — COMING SOON
+              </button>
+            ) : txStatus === 'success' ? (
               <a
                 href={txHash ? `https://basescan.org/tx/${txHash}` : '#'}
                 target="_blank"

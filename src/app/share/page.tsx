@@ -10,11 +10,26 @@ interface Props {
 }
 
 export function generateMetadata({ searchParams }: Props): Metadata {
-  const streak = Math.max(1, parseInt(searchParams.streak ?? '1', 10) || 1);
-  const day    = Math.max(0, parseInt(searchParams.day    ?? '0', 10) || 0);
+  const streak = Math.min(9999, Math.max(1, parseInt(searchParams.streak ?? '1', 10) || 1));
+  const day    = Math.min(9999, Math.max(0, parseInt(searchParams.day    ?? '0', 10) || 0));
 
   const ogImage = `${APP_URL}/og/share?streak=${streak}&day=${day}`;
   const description = `${streak} day streak - Day #${day} complete!`;
+
+  const miniAppEmbed = {
+    version: '1',
+    imageUrl: ogImage,
+    button: {
+      title: 'Play Today',
+      action: {
+        type: 'launch_miniapp',
+        name: 'Onchain Crossword',
+        url: APP_URL,
+        splashImageUrl: `${APP_URL}/splash.png`,
+        splashBackgroundColor: '#ffffff',
+      },
+    },
+  };
 
   return {
     title: `Onchain Crossword - ${streak} Day Streak`,
@@ -25,11 +40,8 @@ export function generateMetadata({ searchParams }: Props): Metadata {
       images: [{ url: ogImage, width: 1200, height: 630 }],
     },
     other: {
-      // Farcaster frame button to launch the mini app
-      'fc:frame': 'vNext',
-      'fc:frame:image': ogImage,
-      'fc:frame:button:1': 'Play Today',
-      'fc:frame:post_url': APP_URL,
+      'fc:miniapp': JSON.stringify(miniAppEmbed),
+      'base:app_id': '69e0b701c4457beb3be44d73',
     },
   };
 }

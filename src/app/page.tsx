@@ -204,10 +204,9 @@ export default function Home() {
   const handleShare = useCallback(() => {
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || 'https://onchain-crossword.vercel.app';
-    // Share URL points to /share with streak params so Farcaster shows the dynamic OG image.
-    // Title is derived server-side from dayNumber — not passed in URL to avoid length issues.
-    const shareUrl = `${appUrl}/share?streak=${streak}&day=${dayNumber}`;
-    const text = `Onchain Crossword Day #${dayNumber} - ${puzzle.title}\n${streak} day streak`;
+    const displayStreak = streakRecord.onChainStreak ?? streak;
+    const shareUrl = `${appUrl}/share?streak=${displayStreak}&day=${dayNumber}`;
+    const text = `Onchain Crossword Day #${dayNumber} - ${puzzle.title}\n${displayStreak} day streak`;
     const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text + '\n' + shareUrl)}`;
     if (isInMiniApp) {
       import('@farcaster/miniapp-sdk').then(({ sdk }) => {
@@ -216,7 +215,7 @@ export default function Home() {
     } else {
       window.open(composeUrl, '_blank');
     }
-  }, [dayNumber, puzzle.title, streak, isInMiniApp]);
+  }, [dayNumber, puzzle.title, streak, streakRecord.onChainStreak, isInMiniApp]);
 
   return (
     <>
@@ -289,7 +288,7 @@ export default function Home() {
                 marginTop: '2px',
               }}
             >
-              {isComplete ? `${streak} DAY STREAK` : 'SOLVE TODAY'}
+              {isComplete ? `${streakRecord.onChainStreak ?? streak} DAY STREAK` : 'SOLVE TODAY'}
             </div>
           </div>
         </header>
@@ -395,12 +394,13 @@ export default function Home() {
 
       {showStamp && (
         <CompletionStamp
-          streak={streak}
+          streak={streakRecord.onChainStreak ?? streak}
           dayNumber={dayNumber}
           puzzleTitle={puzzle.title}
           onShare={handleShare}
           onClose={() => setShowStamp(false)}
           canRecord={streakRecord.canRecord}
+          contractReady={streakRecord.contractReady}
           alreadyRecorded={streakRecord.alreadyRecorded}
           txStatus={streakRecord.txStatus}
           txHash={streakRecord.txHash}
