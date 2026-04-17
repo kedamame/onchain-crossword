@@ -68,6 +68,15 @@ export async function GET(req: NextRequest) {
           </div>
         </div>
 
+        {/* CLEARED badge — full-image horizontal center */}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', background: tier.color, paddingTop: 8, paddingBottom: 8, paddingLeft: 32, paddingRight: 32 }}>
+            <div style={{ display: 'flex', fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: '0.2em' }}>
+              CLEARED
+            </div>
+          </div>
+        </div>
+
         {/* Main: streak (left) + grid (right) */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 80 }}>
 
@@ -91,29 +100,21 @@ export async function GET(req: NextRequest) {
           </div>
 
           {/* Crossword grid — filled cells in tier color to show completion */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            {/* CLEARED badge above grid */}
-            <div style={{ display: 'flex', background: tier.color, paddingTop: 8, paddingBottom: 8, paddingLeft: 24, paddingRight: 24 }}>
-              <div style={{ display: 'flex', fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: '0.2em' }}>
-                CLEARED
+          <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, borderWidth: 2, borderStyle: 'solid', borderColor: tier.color, padding: 6 }}>
+            {grid.slice(0, rows).map((row, ri) => (
+              <div key={ri} style={{ display: 'flex', gap: GAP }}>
+                {row.slice(0, cols).map((cell, ci) => (
+                  <div
+                    key={ci}
+                    style={{
+                      width: CELL,
+                      height: CELL,
+                      background: cell !== null ? tier.color : '#111',
+                    }}
+                  />
+                ))}
               </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, borderWidth: 2, borderStyle: 'solid', borderColor: tier.color, padding: 6 }}>
-              {grid.slice(0, rows).map((row, ri) => (
-                <div key={ri} style={{ display: 'flex', gap: GAP }}>
-                  {row.slice(0, cols).map((cell, ci) => (
-                    <div
-                      key={ci}
-                      style={{
-                        width: CELL,
-                        height: CELL,
-                        background: cell !== null ? tier.color : '#111',
-                      }}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
 
