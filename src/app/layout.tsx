@@ -7,7 +7,7 @@ const APP_URL =
 
 const miniAppEmbed = {
   version: '1',
-  imageUrl: `${APP_URL}/og-image.png`,
+  imageUrl: `${APP_URL}/embed.png`,
   button: {
     title: 'Solve Today',
     action: {
