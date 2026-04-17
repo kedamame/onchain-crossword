@@ -23,7 +23,7 @@ function sanitize(s: string): string {
     .trim();
 }
 
-const CELL = 16;
+const CELL = 24;
 const GAP  = 2;
 
 export async function GET(req: NextRequest) {
