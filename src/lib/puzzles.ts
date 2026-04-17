@@ -39,6 +39,10 @@ const PUZZLE_TITLES = [
   'PROTOCOLS',
 ];
 
+export function getPuzzleTitle(dayNumber: number): string {
+  return PUZZLE_TITLES[dayNumber % PUZZLE_TITLES.length];
+}
+
 // ─── Seeded RNG (mulberry32) ──────────────────────────────────────────────────
 
 function mulberry32(seed: number): () => number {

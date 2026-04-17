@@ -204,8 +204,11 @@ export default function Home() {
   const handleShare = useCallback(() => {
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || 'https://onchain-crossword.vercel.app';
-    const text = `Onchain Crossword Day #${dayNumber} - ${puzzle.title}\nStreak: ${streak} days`;
-    const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text + '\n' + appUrl)}`;
+    // Share URL points to /share with streak params so Farcaster shows the dynamic OG image.
+    // Title is derived server-side from dayNumber — not passed in URL to avoid length issues.
+    const shareUrl = `${appUrl}/share?streak=${streak}&day=${dayNumber}`;
+    const text = `Onchain Crossword Day #${dayNumber} - ${puzzle.title}\n${streak} day streak`;
+    const composeUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text + '\n' + shareUrl)}`;
     if (isInMiniApp) {
       import('@farcaster/miniapp-sdk').then(({ sdk }) => {
         sdk.actions.openUrl(composeUrl);
