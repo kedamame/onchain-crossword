@@ -13,7 +13,7 @@ export function generateMetadata({ searchParams }: Props): Metadata {
   const streak = Math.min(9999, Math.max(1, parseInt(searchParams.streak ?? '1', 10) || 1));
   const day    = Math.min(9999, Math.max(0, parseInt(searchParams.day    ?? '0', 10) || 0));
 
-  const ogImage = `${APP_URL}/og/share?streak=${streak}&day=${day}&v=2`;
+  const ogImage = `${APP_URL}/og/share?streak=${streak}&day=${day}&v=3`;
   const description = `${streak} day streak - Day #${day} complete!`;
 
   const miniAppEmbed = {

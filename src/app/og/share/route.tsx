@@ -1,8 +1,9 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
-import { getPuzzleTitle } from '@/lib/puzzles';
+import { getPuzzleTitle, getPuzzleForDay, buildAnswerGrid } from '@/lib/puzzles';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
+export const maxDuration = 15;
 
 const TIERS = [
   { min: 30, name: 'LEGENDARY', color: '#B8860B' },
@@ -22,14 +23,23 @@ function sanitize(s: string): string {
     .trim();
 }
 
+const CELL = 11;
+const GAP  = 2;
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const streak = Math.max(1, parseInt(searchParams.get('streak') ?? '1', 10) || 1);
-  const day    = Math.max(0, parseInt(searchParams.get('day')    ?? '0', 10) || 0);
+  const streak = Math.min(9999, Math.max(1, parseInt(searchParams.get('streak') ?? '1', 10) || 1));
+  const day    = Math.min(9999, Math.max(0, parseInt(searchParams.get('day')    ?? '0', 10) || 0));
 
   const title = sanitize(getPuzzleTitle(day));
-  const tier = TIERS.find((t) => streak >= t.min) ?? TIERS[TIERS.length - 1];
+  const tier  = TIERS.find((t) => streak >= t.min) ?? TIERS[TIERS.length - 1];
   const streakFontSize = streak >= 1000 ? 110 : streak >= 100 ? 140 : 180;
+
+  // Build the day's crossword grid pattern (null = black cell)
+  const puzzle   = getPuzzleForDay(day);
+  const grid     = buildAnswerGrid(puzzle);
+  const rows     = grid.length;
+  const cols     = grid[0]?.length ?? 0;
 
   return new ImageResponse(
     (
@@ -42,50 +52,73 @@ export async function GET(req: NextRequest) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop: 48,
-          paddingBottom: 48,
-          paddingLeft: 80,
-          paddingRight: 80,
+          paddingTop: 44,
+          paddingBottom: 44,
+          paddingLeft: 72,
+          paddingRight: 72,
           borderTopWidth: 12,
           borderTopStyle: 'solid',
           borderTopColor: tier.color,
         }}
       >
-        {/* Header — centered */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-          <div style={{ display: 'flex', fontSize: 14, fontWeight: 700, color: '#bbb', letterSpacing: '0.2em' }}>
+        {/* Header */}
+        <div style={{ display: 'flex' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#bbb', letterSpacing: '0.2em' }}>
             ONCHAIN CROSSWORD
           </div>
         </div>
 
-        {/* Streak number — centered and dominant */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-          <div style={{ display: 'flex', fontSize: streakFontSize, fontWeight: 900, color: tier.color, lineHeight: 1, letterSpacing: '-6px', whiteSpace: 'nowrap' }}>
-            {String(streak)}
+        {/* Main: streak (left) + grid (right) */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 56 }}>
+
+          {/* Streak + tier */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div style={{ display: 'flex', fontSize: streakFontSize, fontWeight: 900, color: tier.color, lineHeight: 1, letterSpacing: '-4px', whiteSpace: 'nowrap' }}>
+              {String(streak)}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', background: tier.color, paddingTop: 6, paddingBottom: 6, paddingLeft: 20, paddingRight: 20 }}>
+                <div style={{ display: 'flex', fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: '0.15em' }}>
+                  {tier.name}
+                </div>
+              </div>
+              <div style={{ display: 'flex' }}>
+                <div style={{ display: 'flex', fontSize: 18, fontWeight: 700, color: '#555', letterSpacing: '0.12em' }}>
+                  DAY STREAK
+                </div>
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-            <div style={{ display: 'flex', background: tier.color, paddingTop: 8, paddingBottom: 8, paddingLeft: 24, paddingRight: 24 }}>
-              <div style={{ display: 'flex', fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: '0.15em' }}>
-                {tier.name}
+
+          {/* Crossword grid — blank cells showing today's puzzle shape */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, borderWidth: 2, borderStyle: 'solid', borderColor: '#000', padding: 6 }}>
+            {grid.slice(0, rows).map((row, ri) => (
+              <div key={ri} style={{ display: 'flex', gap: GAP }}>
+                {row.slice(0, cols).map((cell, ci) => (
+                  <div
+                    key={ci}
+                    style={{
+                      width: CELL,
+                      height: CELL,
+                      background: cell !== null ? '#fff' : '#000',
+                      border: cell !== null ? '1px solid #ccc' : 'none',
+                    }}
+                  />
+                ))}
               </div>
-            </div>
-            <div style={{ display: 'flex' }}>
-              <div style={{ display: 'flex', fontSize: 20, fontWeight: 700, color: '#555', letterSpacing: '0.12em' }}>
-                DAY STREAK
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Footer — centered */}
+        {/* Footer */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
           <div style={{ display: 'flex' }}>
-            <div style={{ display: 'flex', fontSize: 11, fontWeight: 700, color: '#bbb', letterSpacing: '0.15em' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#bbb', letterSpacing: '0.15em' }}>
               {`DAY #${day} COMPLETE`}
             </div>
           </div>
           <div style={{ display: 'flex' }}>
-            <div style={{ display: 'flex', fontSize: 18, fontWeight: 700, color: '#000' }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: '#000' }}>
               {title}
             </div>
           </div>

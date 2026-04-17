@@ -318,6 +318,25 @@ export function getDailyPuzzle(): { puzzle: Puzzle; dayNumber: number } {
   return { puzzle: buildPuzzle(placed, dayNumber), dayNumber };
 }
 
+export function getPuzzleForDay(dayNumber: number): Puzzle {
+  let placed: PlacedEntry[] | null = null;
+  for (let attempt = 0; attempt < 20 && placed === null; attempt++) {
+    placed = tryGenerate(dayNumber, attempt * 100);
+  }
+  for (let attempt = 0; placed === null && attempt < 20; attempt++) {
+    placed = tryGenerate(dayNumber, attempt * 100 + 2000, 3);
+  }
+  for (let attempt = 0; placed === null && attempt < 20; attempt++) {
+    placed = tryGenerate(dayNumber, attempt * 100 + 4000, 2);
+  }
+  if (placed === null) {
+    const first = WORD_BANK[0];
+    const col = Math.floor((GRID_SIZE - first.word.length) / 2);
+    placed = [{ entry: first, dir: 'across', row: Math.floor(GRID_SIZE / 2), col }];
+  }
+  return buildPuzzle(placed, dayNumber);
+}
+
 // ─── Grid utilities (used by components) ─────────────────────────────────────
 
 /** Build the answer grid (null = black cell) */
