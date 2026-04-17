@@ -12,8 +12,8 @@ const TIERS = [
   { min: 0,  name: 'BRONZE',    color: '#CD7F32' },
 ] as const;
 
-const W = 1200;
-const H = 630;
+const W = 900;
+const H = 600;
 
 // Sanitize text for Satori: remove em dash and non-ASCII characters that
 // would cause Satori to attempt Google Fonts lookup and crash.
@@ -51,10 +51,10 @@ export async function GET(req: NextRequest) {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          paddingTop: 56,
-          paddingBottom: 56,
-          paddingLeft: 72,
-          paddingRight: 72,
+          paddingTop: 48,
+          paddingBottom: 48,
+          paddingLeft: 60,
+          paddingRight: 60,
           borderTopWidth: 10,
           borderTopStyle: 'solid',
           borderTopColor: tier.color,
