@@ -7,7 +7,7 @@ const APP_URL =
 
 const miniAppEmbed = {
   version: '1',
-  imageUrl: `${APP_URL}/opengraph-image`,
+  imageUrl: `${APP_URL}/og-image.png`,
   button: {
     title: 'Solve Today',
     action: {
