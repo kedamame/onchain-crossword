@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
         </div>
 
         {/* Main: streak (left) + grid (right) */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 56 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 80 }}>
 
           {/* Streak + tier */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
