@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useConnect, useConnectors } from 'wagmi';
 
 export interface FarcasterUser {
   fid: number;
@@ -22,6 +23,8 @@ export function useFarcasterMiniApp(): FarcasterState {
     user: null,
   });
   const initialized = useRef(false);
+  const { connect } = useConnect();
+  const connectors = useConnectors();
 
   useEffect(() => {
     if (initialized.current) return;
@@ -36,6 +39,12 @@ export function useFarcasterMiniApp(): FarcasterState {
         }
 
         sdk.actions.ready();
+
+        // Auto-connect the Farcaster wallet so wagmi address is available
+        const farcasterConnector = connectors.find((c) => c.id === 'farcasterMiniApp');
+        if (farcasterConnector) {
+          connect({ connector: farcasterConnector });
+        }
 
         let user: FarcasterUser | null = null;
         try {
