@@ -6,7 +6,10 @@ import {
   useSendTransaction,
   useWaitForTransactionReceipt,
   useReadContract,
+  useChainId,
+  useSwitchChain,
 } from 'wagmi';
+import { base } from 'wagmi/chains';
 import { encodeFunctionData } from 'viem';
 import { CROSSWORD_ABI, CROSSWORD_ADDRESS } from './crosswordContract';
 
@@ -84,9 +87,20 @@ export function useStreakRecord(dayNumber: number): StreakRecordState {
       ? Number(streakInfo[0])
       : null;
 
-  const onRecord = useCallback(() => {
+  const chainId = useChainId();
+  const { switchChainAsync } = useSwitchChain();
+
+  const onRecord = useCallback(async () => {
     if (!CROSSWORD_ADDRESS || !address) return;
     reset();
+
+    if (chainId !== base.id) {
+      try {
+        await switchChainAsync({ chainId: base.id });
+      } catch {
+        return;
+      }
+    }
 
     const calldata = encodeFunctionData({
       abi: CROSSWORD_ABI,
@@ -97,7 +111,7 @@ export function useStreakRecord(dayNumber: number): StreakRecordState {
       to: CROSSWORD_ADDRESS,
       data: `${calldata}${BUILDER_SUFFIX}` as `0x${string}`,
     });
-  }, [sendTransaction, reset, address]);
+  }, [sendTransaction, reset, address, chainId, switchChainAsync]);
 
   return {
     canRecord: !!address,
