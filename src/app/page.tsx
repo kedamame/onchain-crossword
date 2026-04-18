@@ -13,7 +13,6 @@ import { CluePanel } from '@/components/CluePanel';
 import { CompletionStamp } from '@/components/CompletionStamp';
 import { useFarcasterMiniApp } from '@/lib/farcaster';
 import { useStreakRecord } from '@/lib/useStreakRecord';
-import { useGameStart } from '@/lib/useGameStart';
 
 const STORAGE_KEY = 'onchain-crossword';
 
@@ -35,7 +34,7 @@ export default function Home() {
 
   const { isInMiniApp } = useFarcasterMiniApp();
   const streakRecord = useStreakRecord(dayNumber);
-  const { onStart, canStart } = useGameStart(dayNumber);
+
 
   const [userGrid, setUserGrid] = useState<string[][]>(() =>
     Array.from({ length: puzzle.rows }, () => Array(puzzle.cols).fill('')),
@@ -109,9 +108,6 @@ export default function Home() {
       const wordsAtCell = getWordsAtCell(puzzle, row, col);
       if (wordsAtCell.length === 0) return;
 
-      // Send game-start tx on first cell interaction (once per day, wallet must be connected)
-      if (canStart) onStart();
-
       if (selectedCell?.row === row && selectedCell?.col === col && wordsAtCell.length > 1) {
         const currentDir = selectedWord?.direction;
         const other = wordsAtCell.find((w) => w.direction !== currentDir);
@@ -123,7 +119,7 @@ export default function Home() {
       const preferred = wordsAtCell.find((w) => w.direction === selectedWord?.direction);
       setSelectedWord(preferred ?? wordsAtCell[0]);
     },
-    [puzzle, selectedCell, selectedWord, canStart, onStart, isComplete],
+    [puzzle, selectedCell, selectedWord, isComplete],
   );
 
   const handleInput = useCallback(
