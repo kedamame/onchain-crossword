@@ -6,6 +6,7 @@ import {
   useSendTransaction,
   useWaitForTransactionReceipt,
   useReadContract,
+  useSwitchChain,
 } from 'wagmi';
 import { base } from 'wagmi/chains';
 import { encodeFunctionData } from 'viem';
@@ -86,22 +87,28 @@ export function useStreakRecord(dayNumber: number): StreakRecordState {
       ? Number(streakInfo[0])
       : null;
 
-  const onRecord = useCallback(() => {
+  const { switchChainAsync } = useSwitchChain();
+
+  const onRecord = useCallback(async () => {
     if (!CROSSWORD_ADDRESS || !address) return;
     reset();
+
+    try {
+      await switchChainAsync({ chainId: base.id });
+    } catch {
+      // user rejected chain switch or wallet doesn't support it — proceed anyway
+    }
 
     const calldata = encodeFunctionData({
       abi: CROSSWORD_ABI,
       functionName: 'record',
     });
 
-    // chainId causes wagmi to prompt chain switch automatically before sending
     sendTransaction({
       to: CROSSWORD_ADDRESS,
       data: `${calldata}${BUILDER_SUFFIX}` as `0x${string}`,
-      chainId: base.id,
     });
-  }, [sendTransaction, reset, address]);
+  }, [sendTransaction, switchChainAsync, reset, address]);
 
   const errorMessage = writeError?.message ?? receiptError?.message ?? null;
 
