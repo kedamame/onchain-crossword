@@ -13,6 +13,7 @@ import { CluePanel } from '@/components/CluePanel';
 import { CompletionStamp } from '@/components/CompletionStamp';
 import { useFarcasterMiniApp } from '@/lib/farcaster';
 import { useStreakRecord } from '@/lib/useStreakRecord';
+import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 
 const STORAGE_KEY = 'onchain-crossword';
 
@@ -286,6 +287,11 @@ export default function Home() {
             >
               {isComplete ? `${streakRecord.onChainStreak ?? streak} DAY STREAK` : 'SOLVE TODAY'}
             </div>
+            {!isInMiniApp && (
+              <div style={{ marginTop: '8px' }}>
+                <ConnectWalletButton />
+              </div>
+            )}
           </div>
         </header>
 
