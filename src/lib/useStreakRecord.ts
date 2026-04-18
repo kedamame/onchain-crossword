@@ -24,6 +24,7 @@ export interface StreakRecordState {
   txHash: `0x${string}` | undefined;
   /** on-chain streak after TX success or if already recorded today; null otherwise */
   onChainStreak: number | null;
+  errorMessage: string | null;
   onRecord: () => void;
 }
 
@@ -51,7 +52,7 @@ export function useStreakRecord(dayNumber: number): StreakRecordState {
     reset,
   } = useSendTransaction();
 
-  const { isSuccess: isTxSuccess, isLoading: isTxLoading, isError: isTxReceiptError } =
+  const { isSuccess: isTxSuccess, isLoading: isTxLoading, isError: isTxReceiptError, error: receiptError } =
     useWaitForTransactionReceipt({ hash: txHash, query: { enabled: !!txHash } });
 
   // Track refetch-in-progress so we don't expose stale streakInfo as onChainStreak
@@ -102,6 +103,8 @@ export function useStreakRecord(dayNumber: number): StreakRecordState {
     });
   }, [sendTransaction, reset, address]);
 
+  const errorMessage = writeError?.message ?? receiptError?.message ?? null;
+
   return {
     canRecord: !!address,
     contractReady: !!CROSSWORD_ADDRESS && !!address,
@@ -109,6 +112,7 @@ export function useStreakRecord(dayNumber: number): StreakRecordState {
     txStatus,
     txHash,
     onChainStreak,
+    errorMessage,
     onRecord,
   };
 }

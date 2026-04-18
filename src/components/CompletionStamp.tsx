@@ -14,6 +14,7 @@ interface Props {
   alreadyRecorded: boolean;
   txStatus: TxStatus;
   txHash: `0x${string}` | undefined;
+  errorMessage: string | null;
   onRecord: () => void;
 }
 
@@ -48,6 +49,7 @@ export function CompletionStamp({
   alreadyRecorded,
   txStatus,
   txHash,
+  errorMessage,
   onRecord,
 }: Props) {
   const tier = TIERS.find((t) => streak >= t.min) ?? TIERS[TIERS.length - 1];
@@ -186,24 +188,31 @@ export function CompletionStamp({
                 ALREADY RECORDED TODAY
               </button>
             ) : (
-              <button
-                onClick={onRecord}
-                disabled={txStatus === 'pending'}
-                style={{
-                  ...BTN,
-                  background: txStatus === 'error' ? '#fff' : '#000',
-                  color: txStatus === 'error' ? '#cc0000' : '#fff',
-                  border: txStatus === 'error' ? '2px solid #cc0000' : 'none',
-                  opacity: txStatus === 'pending' ? 0.55 : 1,
-                  cursor: txStatus === 'pending' ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {txStatus === 'pending'
-                  ? 'RECORDING...'
-                  : txStatus === 'error'
-                    ? 'FAILED — RETRY'
-                    : 'RECORD STREAK ON-CHAIN'}
-              </button>
+              <>
+                <button
+                  onClick={onRecord}
+                  disabled={txStatus === 'pending'}
+                  style={{
+                    ...BTN,
+                    background: txStatus === 'error' ? '#fff' : '#000',
+                    color: txStatus === 'error' ? '#cc0000' : '#fff',
+                    border: txStatus === 'error' ? '2px solid #cc0000' : 'none',
+                    opacity: txStatus === 'pending' ? 0.55 : 1,
+                    cursor: txStatus === 'pending' ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {txStatus === 'pending'
+                    ? 'RECORDING...'
+                    : txStatus === 'error'
+                      ? 'FAILED — RETRY'
+                      : 'RECORD STREAK ON-CHAIN'}
+                </button>
+                {txStatus === 'error' && errorMessage && (
+                  <div style={{ fontFamily: FONT, fontSize: '10px', color: '#cc0000', wordBreak: 'break-all' }}>
+                    {errorMessage}
+                  </div>
+                )}
+              </>
             )
           )}
 

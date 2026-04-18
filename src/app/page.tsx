@@ -406,6 +406,7 @@ export default function Home() {
           alreadyRecorded={streakRecord.alreadyRecorded}
           txStatus={streakRecord.txStatus}
           txHash={streakRecord.txHash}
+          errorMessage={streakRecord.errorMessage}
           onRecord={streakRecord.onRecord}
         />
       )}
